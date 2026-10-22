@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 import '../reading_settings/reading_settings_model.dart';
 
@@ -14,17 +13,8 @@ class AppTheme {
     TextStyle baseTextStyle;
     switch (settings.fontFamily) {
       case 'Lexend':
-        baseTextStyle = GoogleFonts.lexend(
-          color: colors.textPrimary,
-          fontSize: settings.fontSize,
-          height: settings.lineHeight,
-          letterSpacing: settings.letterSpacing,
-          wordSpacing: settings.wordSpacing,
-        );
-        break;
-      case 'OpenDyslexic':
-        // Fallback to Atkinson Hyperlegible if local font asset not loaded yet
-        baseTextStyle = GoogleFonts.atkinsonHyperlegible(
+        baseTextStyle = TextStyle(
+          fontFamily: 'Lexend',
           color: colors.textPrimary,
           fontSize: settings.fontSize,
           height: settings.lineHeight,
@@ -43,7 +33,8 @@ class AppTheme {
         break;
       case 'Atkinson Hyperlegible':
       default:
-        baseTextStyle = GoogleFonts.atkinsonHyperlegible(
+        baseTextStyle = TextStyle(
+          fontFamily: 'Atkinson Hyperlegible',
           color: colors.textPrimary,
           fontSize: settings.fontSize,
           height: settings.lineHeight,
@@ -93,7 +84,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14.0),
           ),
-          textStyle: GoogleFonts.atkinsonHyperlegible(
+          textStyle: const TextStyle(
+            fontFamily: 'Atkinson Hyperlegible',
             fontSize: 17,
             fontWeight: FontWeight.bold,
           ),
@@ -108,7 +100,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14.0),
           ),
-          textStyle: GoogleFonts.atkinsonHyperlegible(
+          textStyle: const TextStyle(
+            fontFamily: 'Atkinson Hyperlegible',
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
@@ -122,7 +115,8 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: false,
         iconTheme: IconThemeData(color: colors.textPrimary),
-        titleTextStyle: GoogleFonts.atkinsonHyperlegible(
+        titleTextStyle: TextStyle(
+          fontFamily: 'Atkinson Hyperlegible',
           color: colors.textPrimary,
           fontSize: 22,
           fontWeight: FontWeight.bold,

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aperçu Interactif — Aide à la Lecture et à l'Écriture</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @font-face {
+      font-family: 'Atkinson Hyperlegible';
+      src: url('./app/assets/fonts/AtkinsonHyperlegible-Regular.ttf') format('truetype');
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: 'Atkinson Hyperlegible';
+      src: url('./app/assets/fonts/AtkinsonHyperlegible-Bold.ttf') format('truetype');
+      font-weight: 700;
+    }
+    body {
+      font-family: 'Atkinson Hyperlegible', sans-serif;
+      background-color: #F8F7F4;
+      color: #252525;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8 flex justify-center items-start min-h-screen">
+
+  <!-- Mobile Device Simulation Frame -->
+  <div class="w-full max-w-md bg-[#F8F7F4] rounded-[32px] border-4 border-[#E8E5DF] shadow-xl overflow-hidden flex flex-col min-h-[780px]">
+    
+    <!-- Status / Top Bar -->
+    <div class="px-6 pt-5 pb-3 flex justify-between items-center bg-[#F8F7F4]">
+      <!-- Level Badge -->
+      <button id="levelBadgeBtn" onclick="toggleSettings()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#6B5B95]/15 text-[#6B5B95] text-xs font-bold hover:bg-[#6B5B95]/25 transition">
+        <span>🎓</span>
+        <span id="levelBadgeText">Moyen (Collège)</span>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+      </button>
+
+      <!-- Settings Icon -->
+      <button onclick="toggleSettings()" class="w-9 h-9 rounded-full bg-white border border-[#E8E5DF] flex items-center justify-center text-[#252525] hover:bg-[#6B5B95] hover:text-white transition shadow-sm">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+      </button>
+    </div>
+
+    <!-- Screen 1: Home Dashboard -->
+    <div id="homeScreen" class="px-6 py-4 flex-1 flex flex-col">
+      <!-- Greeting Header -->
+      <div class="mb-5">
+        <h1 class="text-2xl font-bold text-[#252525]">Bonjour 👋</h1>
+        <p class="text-base text-[#666666] mt-1">Que souhaitez-vous faire aujourd'hui ?</p>
+      </div>
+
+      <!-- 5 Cards List -->
+      <div class="space-y-3.5 flex-1 pb-6">
+        
+        <!-- Card 1: M'aider à lire -->
+        <div onclick="showDetail('M’aider à lire', 'Faciliter la lecture du texte.')" class="bg-white p-4.5 rounded-[18px] border border-[#E8E5DF] flex items-center gap-4 cursor-pointer hover:border-[#6B5B95] hover:shadow-md transition active:scale-[0.99]">
+          <div class="w-13 h-13 rounded-2xl bg-[#F8F7F4] flex items-center justify-center text-3xl">📖</div>
+          <div class="flex-1">
+            <h2 class="text-lg font-bold text-[#252525]">M’aider à lire</h2>
+            <p class="text-sm text-[#666666] leading-snug">Faciliter la lecture du texte.</p>
+          </div>
+          <div class="text-[#6B5B95] text-xl font-bold">›</div>
+        </div>
+
+        <!-- Card 2: Écouter le texte -->
+        <div onclick="showDetail('Écouter le texte', 'Écouter le texte à voix haute.')" class="bg-white p-4.5 rounded-[18px] border border-[#E8E5DF] flex items-center gap-4 cursor-pointer hover:border-[#6B5B95] hover:shadow-md transition active:scale-[0.99]">
+          <div class="w-13 h-13 rounded-2xl bg-[#F8F7F4] flex items-center justify-center text-3xl">🔊</div>
+          <div class="flex-1">
+            <h2 class="text-lg font-bold text-[#252525]">Écouter le texte</h2>
+            <p class="text-sm text-[#666666] leading-snug">Écouter le texte à voix haute.</p>
+          </div>
+          <div class="text-[#6B5B95] text-xl font-bold">›</div>
+        </div>
+
+        <!-- Card 3: M'aider à écrire -->
+        <div onclick="showDetail('M’aider à écrire', 'Être accompagné pour réaliser une production écrite.')" class="bg-white p-4.5 rounded-[18px] border border-[#E8E5DF] flex items-center gap-4 cursor-pointer hover:border-[#6B5B95] hover:shadow-md transition active:scale-[0.99]">
+          <div class="w-13 h-13 rounded-2xl bg-[#F8F7F4] flex items-center justify-center text-3xl">✏️</div>
+          <div class="flex-1">
+            <h2 class="text-lg font-bold text-[#252525]">M’aider à écrire</h2>
+            <p class="text-sm text-[#666666] leading-snug">Être accompagné pour réaliser une production écrite.</p>
+          </div>
+          <div class="text-[#6B5B95] text-xl font-bold">›</div>
+        </div>
+
+        <!-- Card 4: Simplifier le texte -->
+        <div onclick="showDetail('Simplifier le texte', 'Rendre le texte plus simple et plus facile à comprendre.')" class="bg-white p-4.5 rounded-[18px] border border-[#E8E5DF] flex items-center gap-4 cursor-pointer hover:border-[#6B5B95] hover:shadow-md transition active:scale-[0.99]">
+          <div class="w-13 h-13 rounded-2xl bg-[#F8F7F4] flex items-center justify-center text-3xl">📝</div>
+          <div class="flex-1">
+            <h2 class="text-lg font-bold text-[#252525]">Simplifier le texte</h2>
+            <p class="text-sm text-[#666666] leading-snug">Rendre le texte plus simple et plus facile à comprendre.</p>
+          </div>
+          <div class="text-[#6B5B95] text-xl font-bold">›</div>
+        </div>
+
+        <!-- Card 5: Expliquer la consigne -->
+        <div onclick="showDetail('Expliquer la consigne', 'Comprendre ce qu’on me demande de faire.')" class="bg-white p-4.5 rounded-[18px] border border-[#E8E5DF] flex items-center gap-4 cursor-pointer hover:border-[#6B5B95] hover:shadow-md transition active:scale-[0.99]">
+          <div class="w-13 h-13 rounded-2xl bg-[#F8F7F4] flex items-center justify-center text-3xl">💡</div>
+          <div class="flex-1">
+            <h2 class="text-lg font-bold text-[#252525]">Expliquer la consigne</h2>
+            <p class="text-sm text-[#666666] leading-snug">Comprendre ce qu’on me demande de faire.</p>
+          </div>
+          <div class="text-[#6B5B95] text-xl font-bold">›</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Screen 2: Feature Placeholder Modal/View -->
+    <div id="detailScreen" class="px-6 py-6 flex-1 flex flex-col hidden">
+      <button onclick="backToHome()" class="flex items-center gap-2 text-[#6B5B95] font-bold text-sm mb-6 hover:underline">
+        <span>← Retour à l'accueil</span>
+      </button>
+      <div class="bg-white p-6 rounded-[20px] border border-[#E8E5DF] text-center flex-1 flex flex-col justify-center items-center">
+        <div id="detailIcon" class="text-5xl mb-4">📖</div>
+        <h2 id="detailTitle" class="text-2xl font-bold text-[#252525] mb-2">Titre</h2>
+        <p id="detailDesc" class="text-base text-[#666666] max-w-xs mb-8">Description</p>
+        <button onclick="toggleSettings()" class="h-[50px] px-8 bg-[#6B5B95] text-white font-bold rounded-[14px] hover:bg-[#58487e] transition">
+          Personnaliser la lecture
+        </button>
+      </div>
+    </div>
+
+    <!-- Reading Settings Bottom Sheet Overlay -->
+    <div id="settingsSheet" class="fixed inset-0 bg-black/40 flex flex-col justify-end z-50 hidden" onclick="closeSettingsIfOutside(event)">
+      <div class="bg-white rounded-t-[28px] p-6 max-w-md mx-auto w-full max-h-[85vh] overflow-y-auto" onclick="event.stopPropagation()">
+        <!-- Handle -->
+        <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4"></div>
+        
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold text-[#252525]">Réglages de lecture</h3>
+          <button onclick="toggleSettings()" class="text-sm text-[#6B5B95] font-bold">Fermer</button>
+        </div>
+
+        <!-- Size Step Control -->
+        <div class="mb-4 bg-[#F8F7F4] p-3 rounded-2xl flex justify-between items-center border border-[#E8E5DF]">
+          <span class="font-bold text-[#252525]">Taille du texte</span>
+          <div class="flex items-center gap-3">
+            <button onclick="adjustSize(-2)" class="w-8 h-8 rounded-full bg-white border border-[#E8E5DF] font-bold text-[#6B5B95]">-</button>
+            <span id="sizeDisplay" class="font-bold text-[#6B5B95] text-sm w-12 text-center">18 px</span>
+            <button onclick="adjustSize(2)" class="w-8 h-8 rounded-full bg-white border border-[#E8E5DF] font-bold text-[#6B5B95]">+</button>
+          </div>
+        </div>
+
+        <!-- Line Spacing -->
+        <div class="mb-4 bg-[#F8F7F4] p-3 rounded-2xl flex justify-between items-center border border-[#E8E5DF]">
+          <span class="font-bold text-[#252525]">Espacement lignes</span>
+          <div class="flex items-center gap-3">
+            <button onclick="adjustLineHeight(-0.1)" class="w-8 h-8 rounded-full bg-white border border-[#E8E5DF] font-bold text-[#6B5B95]">-</button>
+            <span id="lineDisplay" class="font-bold text-[#6B5B95] text-sm w-12 text-center">1.6</span>
+            <button onclick="adjustLineHeight(0.1)" class="w-8 h-8 rounded-full bg-white border border-[#E8E5DF] font-bold text-[#6B5B95]">+</button>
+          </div>
+        </div>
+
+        <!-- School Level Switcher -->
+        <div class="mb-5">
+          <label class="block text-sm font-bold text-[#252525] mb-2">Niveau scolaire (Algérie)</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button onclick="selectLevel('Primaire (5e AP)')" class="py-2.5 px-1 rounded-xl text-xs font-bold border border-[#E8E5DF] hover:bg-[#6B5B95]/15 focus:border-[#6B5B95]">Primaire</button>
+            <button onclick="selectLevel('Moyen (Collège)')" class="py-2.5 px-1 rounded-xl text-xs font-bold border-2 border-[#6B5B95] bg-[#6B5B95]/10 text-[#6B5B95]">Moyen</button>
+            <button onclick="selectLevel('Secondaire (Lycée)')" class="py-2.5 px-1 rounded-xl text-xs font-bold border border-[#E8E5DF] hover:bg-[#6B5B95]/15 focus:border-[#6B5B95]">Secondaire</button>
+          </div>
+        </div>
+
+        <!-- Confirm Button -->
+        <button onclick="toggleSettings()" class="w-full h-[50px] bg-[#6B5B95] text-white font-bold rounded-2xl hover:bg-[#58487e] transition">
+          Appliquer et continuer
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let currentSize = 18;
+    let currentLine = 1.6;
+
+    function toggleSettings() {
+      const sheet = document.getElementById('settingsSheet');
+      sheet.classList.toggle('hidden');
+    }
+
+    function closeSettingsIfOutside(e) {
+      document.getElementById('settingsSheet').classList.add('hidden');
+    }
+
+    function showDetail(title, desc) {
+      document.getElementById('homeScreen').classList.add('hidden');
+      document.getElementById('detailScreen').classList.remove('hidden');
+      document.getElementById('detailTitle').innerText = title;
+      document.getElementById('detailDesc').innerText = desc;
+    }
+
+    function backToHome() {
+      document.getElementById('detailScreen').classList.add('hidden');
+      document.getElementById('homeScreen').classList.remove('hidden');
+    }
+
+    function adjustSize(delta) {
+      currentSize = Math.max(14, Math.min(28, currentSize + delta));
+      document.getElementById('sizeDisplay').innerText = currentSize + ' px';
+    }
+
+    function adjustLineHeight(delta) {
+      currentLine = Math.max(1.4, Math.min(2.2, parseFloat((currentLine + delta).toFixed(1))));
+      document.getElementById('lineDisplay').innerText = currentLine.toFixed(1);
+    }
+
+    function selectLevel(lvl) {
+      document.getElementById('levelBadgeText').innerText = lvl;
+      toggleSettings();
+    }
+  </script>
+</body>
+</html>
