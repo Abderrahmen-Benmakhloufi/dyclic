@@ -1,0 +1,81 @@
+{
+  "@@locale": "fr",
+  "appTitle": "Aide à la Lecture et à l'Écriture",
+  "@appTitle": {
+    "description": "Titre principal de l'application"
+  },
+  "appTagline": "Ton compagnon pour lire, comprendre et rédiger avec confiance",
+  "@appTagline": {
+    "description": "Slogan bienveillant de l'application"
+  },
+
+  "onboardingTitle": "Bienvenue !",
+  "onboardingSubtitle": "Choisis ton niveau scolaire pour adapter tous les textes et conseils :",
+  "onboardingMandatoryNotice": "Cette sélection est nécessaire pour préparer ton espace de travail.",
+  "onboardingConfirmButton": "Commencer l'aventure",
+
+  "levelPrimaireTitle": "Primaire",
+  "levelPrimaireSubtitle": "5e Année Primaire (5e AP)",
+  "levelPrimaireDesc": "Phrases très courtes, repères visuels clairs et vocabulaire guidé.",
+
+  "levelMoyenTitle": "Moyen (Collège)",
+  "levelMoyenSubtitle": "1e à 4e Année Moyenne (1e-4e AM)",
+  "levelMoyenDesc": "Situations d'intégration, explications pas à pas et enrichissement du vocabulaire.",
+
+  "levelSecondaireTitle": "Secondaire (Lycée)",
+  "levelSecondaireSubtitle": "1e à 3e Année Secondaire (1e-3e AS)",
+  "levelSecondaireDesc": "Textes plus denses, démarche argumentative et réflexion méthodique.",
+
+  "currentLevelBadge": "Niveau : {level}",
+  "@currentLevelBadge": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+
+  "navHome": "Accueil",
+  "navSettings": "Réglages de lecture",
+  "navHelp": "Aide",
+
+  "featureF4Title": "Situation d'Intégration",
+  "featureF4Badge": "Production Écrite",
+  "featureF4Desc": "Organise tes idées, utilise des amorces de phrases et progresse grâce à des indices.",
+
+  "featureF1Title": "Simplifier un Texte",
+  "featureF1Badge": "Compréhension",
+  "featureF1Desc": "Allège les phrases complexes tout en conservant les mots importants et leurs explications.",
+
+  "featureF2Title": "Expliquer une Consigne",
+  "featureF2Badge": "Méthode",
+  "featureF2Desc": "Découvre clairement ce qui t'est demandé, les étapes à suivre et les mots-clés.",
+
+  "featureF3Title": "Écouter la Lecture",
+  "featureF3Badge": "Synthèse Vocale",
+  "featureF3Desc": "Écoute n'importe quel texte avec un surlignage synchronisé mot à mot.",
+
+  "featureF5Title": "Confort Visuel",
+  "featureF5Badge": "Aide à la Lecture",
+  "featureF5Desc": "Personnalise la police, les espacements, les couleurs et active la règle de lecture.",
+
+  "btnContinue": "Continuer",
+  "btnValidate": "Valider",
+  "btnCancel": "Annuler",
+  "btnRetry": "Réessayer",
+  "btnCopy": "Copier",
+  "btnListen": "Écouter",
+  "btnPause": "Pause",
+  "btnStop": "Arrêter",
+  "btnSettings": "Paramètres",
+  "btnClose": "Fermer",
+
+  "btnSeeHint": "Voir l'indice",
+  "btnSeeRule": "Comprendre la règle",
+  "btnSeeCorrection": "Voir la correction",
+
+  "offlineTitle": "Mode hors-ligne",
+  "offlineBanner": "Pas de connexion Internet. Tes réglages et tes textes récents restent accessibles !",
+  "errorGeneric": "Une erreur est survenue. N'hésite pas à réessayer.",
+  "errorRateLimit": "Tu as fait plusieurs demandes rapidement. Prends une courte pause et réessaie dans quelques instants."
+}
