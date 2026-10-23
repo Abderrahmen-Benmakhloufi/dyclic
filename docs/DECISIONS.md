@@ -85,3 +85,14 @@ This document tracks all foundational architectural, technical, and pedagogical 
   - Edge Functions operate ephemerally: user text is processed in-memory and never written to a database table. Only token counts, latency, and sanitized error codes are logged.
   - Gate 2 will formally resolve the parental consent and data protection compliance framework.
 - **Consequences:** Eliminates legal risk for the prototype demo while providing a frictionless onboarding experience.
+
+---
+
+## ADR-008: Multi-Provider LLM Gateway (Gemini Flash Free Tier & Claude Swappable)
+- **Status:** Accepted (Per Owner Confirmation)
+- **Context:** Testing and demonstration require a reliable, high-speed LLM with structured JSON support without incurring high costs or requiring a credit card for the developer.
+- **Decision:**
+  - Build the backend Edge Function `/ai` with a modular provider architecture.
+  - Development and initial prototype validation use Google Gemini (via Google AI Studio Free Tier: 1,500 requests/day, 100% free, zero credit card requirement).
+  - The provider is configurable via environment variables (`AI_PROVIDER="gemini" | "claude"`), allowing instant switching to Claude Haiku/Sonnet for official presentation if desired, with zero changes to Flutter client code.
+- **Consequences:** Zero cost during prototype development and testing, high throughput, and zero client code coupling to a single AI vendor.
