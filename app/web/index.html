@@ -135,8 +135,42 @@
       s.addEventListener('click', dismissSplash);
       s.addEventListener('touchstart', dismissSplash, { passive: true });
     }
+
+    // 5. On-screen error diagnostic (displays any uncaught browser/network errors)
+    function showBrowserError(msg) {
+      dismissSplash();
+      var box = document.getElementById('debug-error-banner');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'debug-error-banner';
+        box.style.position = 'fixed';
+        box.style.bottom = '20px';
+        box.style.left = '20px';
+        box.style.right = '20px';
+        box.style.backgroundColor = '#FFEBEE';
+        box.style.color = '#B71C1C';
+        box.style.border = '1.5px solid #EF5350';
+        box.style.padding = '14px 18px';
+        box.style.borderRadius = '12px';
+        box.style.boxShadow = '0 8px 24px rgba(0,0,0,0.18)';
+        box.style.fontFamily = 'monospace';
+        box.style.fontSize = '13px';
+        box.style.zIndex = '999999999';
+        box.style.lineHeight = '1.5';
+        document.body.appendChild(box);
+      }
+      box.innerHTML = '⚠️ <b>Erreur de chargement:</b><br>' + msg;
+    }
+
+    window.addEventListener('error', function (e) {
+      showBrowserError(e.message || (e.error && e.error.message) || e.toString());
+    });
+
+    window.addEventListener('unhandledrejection', function (e) {
+      showBrowserError(e.reason ? (e.reason.message || e.reason.toString()) : e.toString());
+    });
   </script>
 
-  <script src="flutter_bootstrap.js" async></script>
+  <script src="flutter_bootstrap.js?v=20261025" async></script>
 </body>
 </html>
