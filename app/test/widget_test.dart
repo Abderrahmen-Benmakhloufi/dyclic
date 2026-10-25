@@ -30,7 +30,30 @@ void main() {
     expect(find.text('Commencer'), findsOneWidget);
   });
 
-  testWidgets('App shows HomeScreen directly when onboarding is already done', (tester) async {
+  testWidgets('App shows DiagnosticGateScreen when onboarding is done but diagnostic is not done', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'learner_onboarding_completed': true,
+      'learner_educational_level': 'moyen',
+    });
+    final prefs = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: const LectureAideApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('As-tu des difficultés en lecture ou en écriture ?'), findsOneWidget);
+    expect(find.text('Oui, répondre au questionnaire'), findsOneWidget);
+    expect(find.text('Non, commencer directement'), findsOneWidget);
+  });
+
+  testWidgets('App shows HomeScreen directly when onboarding and diagnostic are already done', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -41,6 +64,7 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'learner_onboarding_completed': true,
       'learner_educational_level': 'moyen',
+      'diag_completed': true,
     });
     final prefs = await SharedPreferences.getInstance();
 
