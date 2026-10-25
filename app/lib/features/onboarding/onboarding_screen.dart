@@ -14,7 +14,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 }
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
-  LearnerLevel? _selectedLevel;
+  LearnerLevel _selectedLevel = LearnerLevel.moyen;
 
   @override
   Widget build(BuildContext context) {
@@ -84,12 +84,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
               // Mandatory validation button
               ElevatedButton(
-                onPressed: _selectedLevel == null
-                    ? null
-                    : () async {
-                        await ref
-                            .read(readingSettingsProvider.notifier)
-                            .setLearnerLevel(_selectedLevel!);
+                onPressed: () async {
+                  await ref
+                      .read(readingSettingsProvider.notifier)
+                      .setLearnerLevel(_selectedLevel);
 
                         if (context.mounted) {
                           Navigator.of(context).pushReplacement(
