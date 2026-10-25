@@ -93,30 +93,48 @@
   </div>
 
   <script>
-    // Remove splash screen once Flutter paints its first frame
-    window.addEventListener('flutter-first-frame', function () {
+    function dismissSplash() {
       var splash = document.getElementById('loading-splash');
       if (splash) {
+        splash.style.pointerEvents = 'none';
         splash.style.opacity = '0';
         setTimeout(function () {
-          splash.remove();
-        }, 400);
+          if (splash && splash.parentNode) {
+            splash.parentNode.removeChild(splash);
+          }
+        }, 350);
       }
-    });
+    }
 
-    // Fallback: If event is missed, poll for flutter glasspane
+    // 1. Listen for standard Flutter first frame event
+    window.addEventListener('flutter-first-frame', dismissSplash);
+
+    // 2. Poll for any Flutter element rendered in the DOM
+    var checkCount = 0;
     var checkInterval = setInterval(function () {
-      if (document.querySelector('flt-glass-pane') || document.querySelector('flutter-view')) {
+      checkCount++;
+      if (document.querySelector('flt-glass-pane') ||
+          document.querySelector('flutter-view') ||
+          document.querySelector('canvas') ||
+          (window._flutter && window._flutter.loader && window._flutter.loader._scriptLoaded)) {
         clearInterval(checkInterval);
-        var splash = document.getElementById('loading-splash');
-        if (splash) {
-          splash.style.opacity = '0';
-          setTimeout(function () {
-            splash.remove();
-          }, 400);
-        }
+        setTimeout(dismissSplash, 300);
+      } else if (checkCount > 15) {
+        // After 3 seconds max, automatically dismiss
+        clearInterval(checkInterval);
+        dismissSplash();
       }
     }, 200);
+
+    // 3. Absolute safety timeout: Guarantee dismissal after 2.5 seconds
+    setTimeout(dismissSplash, 2500);
+
+    // 4. Instant click/touch dismiss
+    var s = document.getElementById('loading-splash');
+    if (s) {
+      s.addEventListener('click', dismissSplash);
+      s.addEventListener('touchstart', dismissSplash, { passive: true });
+    }
   </script>
 
   <script src="flutter_bootstrap.js" async></script>

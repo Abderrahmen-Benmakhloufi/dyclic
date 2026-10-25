@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/reading_settings/reading_settings_model.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/theme/app_colors.dart';
+import '../diagnostic/diagnostic_gate_screen.dart';
 import '../home/home_screen.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -93,7 +94,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         if (context.mounted) {
                           Navigator.of(context).pushReplacement(
                             MaterialPageRoute(
-                              builder: (_) => const HomeScreen(),
+                              builder: (_) => const DiagnosticGateScreen(),
                             ),
                           );
                         }
