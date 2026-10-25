@@ -70,7 +70,7 @@ class DiagnosticGateScreen extends ConsumerWidget {
                       cardBg: const Color(0xFFF5F2FC),
                       title: 'Oui, répondre au questionnaire',
                       subtitle: '24 questions · environ 5 minutes',
-                      onTap: () => Navigator.of(context).pushReplacement(
+                      onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const DiagnosticQuestionScreen(),
                         ),
@@ -89,10 +89,6 @@ class DiagnosticGateScreen extends ConsumerWidget {
                         await ref
                             .read(learnerProfileProvider.notifier)
                             .skipDiagnostic();
-                        if (context.mounted) {
-                          // Pop back to root — main.dart routing will show HomeScreen
-                          Navigator.of(context).pop();
-                        }
                       },
                     ),
                     const Spacer(),

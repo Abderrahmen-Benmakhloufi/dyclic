@@ -165,10 +165,7 @@ class DiagnosticResultScreen extends ConsumerWidget {
                 .read(learnerProfileProvider.notifier)
                 .saveCompletedProfile(profile);
             if (context.mounted) {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-                (route) => false,
-              );
+              Navigator.of(context).popUntil((route) => route.isFirst);
             }
           },
           style: ElevatedButton.styleFrom(
