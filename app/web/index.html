@@ -1,38 +1,124 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Aide à la lecture et à l'écriture pour élèves avec difficultés ou dyslexie.">
 
   <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="lecture_aide">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Lecture Aide">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>lecture_aide</title>
+  <title>Lecture Aide</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #F8F7F4;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    #loading-splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #F8F7F4;
+      z-index: 999999;
+      transition: opacity 0.4s ease-out;
+    }
+
+    .splash-icon {
+      font-size: 52px;
+      margin-bottom: 20px;
+      animation: float 2s ease-in-out infinite;
+    }
+
+    .splash-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #252525;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+
+    .splash-subtitle {
+      font-size: 14px;
+      color: #666666;
+      margin-bottom: 28px;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3.5px solid #EDE9F6;
+      border-top-color: #6B5B95;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+  </style>
 </head>
 <body>
+  <!-- Warm welcoming splash screen shown instantly while Flutter initializes -->
+  <div id="loading-splash">
+    <div class="splash-icon">📖</div>
+    <div class="splash-title">Lecture Aide</div>
+    <div class="splash-subtitle">Préparation de ton espace de travail...</div>
+    <div class="spinner"></div>
+  </div>
+
+  <script>
+    // Remove splash screen once Flutter paints its first frame
+    window.addEventListener('flutter-first-frame', function () {
+      var splash = document.getElementById('loading-splash');
+      if (splash) {
+        splash.style.opacity = '0';
+        setTimeout(function () {
+          splash.remove();
+        }, 400);
+      }
+    });
+
+    // Fallback: If event is missed, poll for flutter glasspane
+    var checkInterval = setInterval(function () {
+      if (document.querySelector('flt-glass-pane') || document.querySelector('flutter-view')) {
+        clearInterval(checkInterval);
+        var splash = document.getElementById('loading-splash');
+        if (splash) {
+          splash.style.opacity = '0';
+          setTimeout(function () {
+            splash.remove();
+          }, 400);
+        }
+      }
+    }, 200);
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
