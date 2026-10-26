@@ -88,6 +88,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   await ref
                       .read(readingSettingsProvider.notifier)
                       .setLearnerLevel(_selectedLevel);
+                  if (context.mounted) {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) => const DiagnosticGateScreen(),
+                      ),
+                    );
+                  }
                 },
                 child: const Text('Commencer'),
               ),

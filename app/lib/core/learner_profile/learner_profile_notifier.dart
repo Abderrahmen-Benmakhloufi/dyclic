@@ -78,7 +78,7 @@ class LearnerProfileNotifier extends StateNotifier<LearnerProfile> {
 
   // ── public actions ────────────────────────────────────────────────────────
 
-  /// Save a completed profile after all 24 questions are answered.
+  /// Save a completed profile after all 23 questions are answered.
   Future<void> saveCompletedProfile(LearnerProfile profile) async {
     state = profile;
     await Future.wait([

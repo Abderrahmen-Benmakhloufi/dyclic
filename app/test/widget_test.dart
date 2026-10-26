@@ -93,4 +93,36 @@ void main() {
     expect(find.text('Simplifier le texte'), findsOneWidget);
     expect(find.text('Expliquer la consigne'), findsOneWidget);
   });
+
+  testWidgets('Skipping diagnostic navigates to HomeScreen without error', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    SharedPreferences.setMockInitialValues({
+      'learner_onboarding_completed': true,
+      'learner_educational_level': 'moyen',
+    });
+    final prefs = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: const LectureAideApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Non, commencer directement'), findsOneWidget);
+    await tester.tap(find.text('Non, commencer directement'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bonjour 👋'), findsOneWidget);
+  });
 }

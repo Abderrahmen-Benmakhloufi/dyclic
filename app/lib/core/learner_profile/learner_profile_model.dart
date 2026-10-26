@@ -181,15 +181,15 @@ class LearnerProfile {
 
     // B1 — Fluidité de lecture (includes visual perception)
     // Q1(0/2), Q5(0/2), Q6(0/2), Q7(0/2), Q8(0-4), Q10(0-4),
-    // Q11(0/2), Q13(0/2), Q14(0/2), Q17(0/2), Q18(0/2), Q19(0/2), Q21(0-4)
-    const b1Max = 2+2+2+2+4+4+2+2+2+2+2+2+4; // 34
+    // Q11(0/2), Q13(0/2), Q14(0/2), Q17(0/2), Q18(0/2), Q19(0/2)
+    const b1Max = 2+2+2+2+4+4+2+2+2+2+2+2; // 30
     final b1Raw = q('q1')+q('q5')+q('q6')+q('q7')+q('q8')+q('q10')+
-        q('q11')+q('q13')+q('q14')+q('q17')+q('q18')+q('q19')+q('q21');
+        q('q11')+q('q13')+q('q14')+q('q17')+q('q18')+q('q19');
 
     // B2 — Orthographe et écriture
-    // Q9(0-4), Q16(0-4), Q20(0/2), Q21(0-4), Q22(0-4)
-    const b2Max = 4+4+2+4+4; // 18
-    final b2Raw = q('q9')+q('q16')+q('q20')+q('q21')+q('q22');
+    // Q9(0-4), Q16(0-4), Q20(0/2), Q22(0-4)
+    const b2Max = 4+4+2+4; // 14
+    final b2Raw = q('q9')+q('q16')+q('q20')+q('q22');
 
     // B3 — Mémoire et traitement auditif
     // Q4(0-4), Q15(0-4), Q23(0-4)

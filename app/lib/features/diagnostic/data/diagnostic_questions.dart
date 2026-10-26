@@ -1,4 +1,4 @@
-// All 24 diagnostic questions with their metadata.
+// All 23 diagnostic questions with their metadata.
 // Question IDs are stable keys used in LearnerProfile.answers map.
 
 // ---------------------------------------------------------------------------
@@ -74,7 +74,7 @@ const List<String> frequencyLabels = [
 ];
 
 // ---------------------------------------------------------------------------
-// The 24 questions
+// The 23 questions
 // ---------------------------------------------------------------------------
 
 const List<DiagnosticQuestion> diagnosticQuestions = [
@@ -87,14 +87,14 @@ const List<DiagnosticQuestion> diagnosticQuestions = [
   ),
   DiagnosticQuestion(
     id: 'q2',
-    text: "J'ai souvent besoin de plus de temps pour bien comprendre les idées complexes.",
+    text: "J'ai besoin de plus de temps pour bien comprendre les idées complexes.",
     type: QuestionType.frequency,
     categoryName: 'Charge cognitive',
     categoryEmoji: '💭',
   ),
   DiagnosticQuestion(
     id: 'q3',
-    text: "Je me sens souvent mentalement épuisé(e) après de longues séances de lecture ou d'écriture.",
+    text: "Je me sens mentalement épuisé(e) après de longues séances de lecture ou d'écriture.",
     type: QuestionType.frequency,
     categoryName: 'Charge cognitive',
     categoryEmoji: '💭',
@@ -109,7 +109,7 @@ const List<DiagnosticQuestion> diagnosticQuestions = [
       "Les comprends immédiatement et m'en souviens.",
       'Préfère les avoir par écrit.',
       "Ai besoin de les entendre plusieurs fois.",
-      "Les oublie souvent si elles ne sont pas répétées.",
+      "Les oublie souvent si elles ne sont pas répétées plusieurs fois.",
     ],
   ),
   DiagnosticQuestion(
@@ -149,7 +149,7 @@ const List<DiagnosticQuestion> diagnosticQuestions = [
   ),
   DiagnosticQuestion(
     id: 'q10',
-    text: "Je confonds parfois des lettres qui se ressemblent visuellement, comme « b » et « d ».",
+    text: "Je confonds des lettres qui se ressemblent visuellement, comme « b » et « d ».",
     type: QuestionType.frequency,
     categoryName: 'Fluidité de lecture',
     categoryEmoji: '📖',
@@ -225,22 +225,15 @@ const List<DiagnosticQuestion> diagnosticQuestions = [
     categoryEmoji: '✍️',
   ),
   DiagnosticQuestion(
-    id: 'q21',
-    text: "J'ai besoin de plus de temps que mes camarades pour terminer les travaux écrits.",
-    type: QuestionType.frequency,
-    categoryName: 'Fluidité de lecture',
-    categoryEmoji: '📖',
-  ),
-  DiagnosticQuestion(
     id: 'q22',
-    text: "J'ai du mal à mémoriser les règles de grammaire, par exemple la règle qui consiste à ajouter un « u » après la lettre « g » pour obtenir certains sons.",
+    text: "J'ai du mal à mémoriser certaines règles de grammaire, par exemple la différence entre le son de « g » dans « gare » et celui de « g » dans « girafe ».",
     type: QuestionType.frequency,
     categoryName: 'Orthographe',
     categoryEmoji: '✍️',
   ),
   DiagnosticQuestion(
     id: 'q23',
-    text: "J'ai des difficultés à comprendre les consignes dans toutes les matières, notamment en histoire-géographie, en sciences de la vie et de la Terre (SVT) et en mathématiques.",
+    text: "J'ai des difficultés à comprendre les consignes",
     type: QuestionType.frequency,
     categoryName: 'Mémoire auditive',
     categoryEmoji: '🧠',

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/learner_profile/learner_profile_notifier.dart';
 import '../../core/theme/app_colors.dart';
+import '../home/home_screen.dart';
 import 'diagnostic_question_screen.dart';
 
 // ---------------------------------------------------------------------------
@@ -69,7 +70,7 @@ class DiagnosticGateScreen extends ConsumerWidget {
                       cardBorder: AppColors.primary,
                       cardBg: const Color(0xFFF5F2FC),
                       title: 'Oui, répondre au questionnaire',
-                      subtitle: '24 questions · environ 5 minutes',
+                      subtitle: '23 questions · environ 5 minutes',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const DiagnosticQuestionScreen(),
@@ -89,6 +90,13 @@ class DiagnosticGateScreen extends ConsumerWidget {
                         await ref
                             .read(learnerProfileProvider.notifier)
                             .skipDiagnostic();
+                        if (context.mounted) {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (_) => const HomeScreen(),
+                            ),
+                          );
+                        }
                       },
                     ),
                     const Spacer(),
@@ -96,19 +104,25 @@ class DiagnosticGateScreen extends ConsumerWidget {
                     // ── Privacy note ───────────────────────────────────────────
                     Padding(
                       padding: const EdgeInsets.only(bottom: 24),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.lock_outline,
-                              size: 14, color: AppColors.textSecondary),
-                          const SizedBox(width: 6),
-                          Text(
-                            "Aucune donnée personnelle n'est collectée",
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                          ),
-                        ],
+                      child: Center(
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: [
+                            const Icon(Icons.lock_outline,
+                                size: 14, color: AppColors.textSecondary),
+                            Text(
+                              "Aucune donnée personnelle n'est collectée",
+                              textAlign: TextAlign.center,
+                              softWrap: true,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
