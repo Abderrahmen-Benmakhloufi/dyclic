@@ -73,6 +73,28 @@ const List<String> frequencyLabels = [
   'Toujours',
 ];
 
+/// Resolves the human-readable text corresponding to a raw score for a given question
+String getAnswerText(DiagnosticQuestion question, int score) {
+  switch (question.type) {
+    case QuestionType.yesNo:
+      return score == 2 ? 'Oui' : 'Non';
+    case QuestionType.frequency:
+      if (score >= 0 && score < frequencyLabels.length) {
+        return frequencyLabels[score];
+      }
+      return 'Score $score';
+    case QuestionType.multiChoice:
+      final choices = question.choices;
+      if (choices != null && choices.isNotEmpty) {
+        if (score == 0) return choices[0];
+        if (score == 1 && choices.length > 1) return choices[1];
+        if (score == 3 && choices.length > 2) return choices[2];
+        if (score == 4 && choices.length > 3) return choices[3];
+      }
+      return 'Option $score';
+  }
+}
+
 // ---------------------------------------------------------------------------
 // The 23 questions
 // ---------------------------------------------------------------------------

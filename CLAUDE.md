@@ -65,3 +65,38 @@ Prompt parameters must include `level` (`primaire` | `moyen` | `secondaire`) to 
   - `supabase start` — Local development stack
   - `supabase functions serve ai --no-verify-jwt` — Local Edge Function testing
   - `supabase secrets set ANTHROPIC_API_KEY=...` — Production secrets
+
+---
+
+## 7. UI/UX Design & Accessibility Guidelines (User-Mandated)
+> Detailed specifications are maintained in `agent/skills/ui-ux-design-rules.md`. All new interfaces must strictly obey these rules:
+
+1. **Stitch UI Aesthetics & Breathing Room:**
+   - Soft, comforting palettes (creme `#FFFDF8`, pastel tones). Never use pitch black in dark mode or blinding white on large reading areas.
+   - Generous rounded corners (`14-16px`), subtle borders (`palette.border`), and gentle micro-shadows.
+   - Minimum legible font size: **13.5px to 16px** for UI controls; reading text starts at **18px+** with scaling controls.
+2. **Half-Screen Modal for Adjustments (Live Preview):**
+   - Any typography or appearance adjustment sheet (`ReadingSettingsSheet`) MUST open in **half-screen (~50-52% height)** with a light translucent barrier (`barrierColor: Colors.black.withValues(alpha: 0.15)`).
+   - Auto-scroll the reading canvas to top (`0.0`) upon opening so the user immediately sees the text.
+   - Adjustments to font size, line spacing, font family, and contrast must reflect **live in real-time** without closing the sheet.
+3. **Non-Color Syllable Distinction (No Conflict with b, d, p):**
+   - Syllables must **NEVER** change the font color of text! Changing text colors clashes with semantic dyslexic aids (`b` blue, `d` orange, `p` pink, silent letters gray italic).
+   - Syllables are distinguished strictly via:
+     - **Translucent background boxes (`Blocs doux`)** on alternate syllables (default).
+     - **Underlines (`Souligné`)** on alternate syllables.
+   - Quick toggle chip `[ 🔲 Blocs ]` / `[ ➖ Souligné ]` with live preview and persistence in `SharedPreferences`.
+4. **Sensible Defaults & Minimal Cognitive Load:**
+   - By default on fresh text, only syllable segmentation is enabled (`_showSyllables = true`).
+   - Detailed letter and sound coloring aids (mirror letters, silent letters, phonemes, vowel E, contextual letters) must be **DISABLED by default**.
+   - User selections must persist immediately in `SharedPreferences`.
+5. **Action Buttons & Speech (TTS) Affordance:**
+   - Audio/TTS button must never be a tiny unlabelled icon; use prominent buttons with clear labels (`Écouter` / `Arrêter`) and reactive colors.
+   - Every word in the reading canvas must be clickable (`TapGestureRecognizer`) to pronounce the word individually with temporary highlight.
+   - Voice speed pills must use `Expanded` in a horizontal row to prevent pixel overflows.
+6. **Defensive Layout (Zero Pixel Overflows):**
+   - Clean AppBar (no duplicate back buttons or stacked action icons).
+   - Responsive flex/wrap layouts (`Expanded`, `Wrap`) so badges never exceed card boundaries.
+   - Sticky bottom dock for the most frequent in-reading actions (`Ajuster la police & taille`, `Règle de lecture`).
+7. **Version Code & Deployment:**
+   - Always increment `pubspec.yaml` version code/name and the visible label in `home_screen.dart` (`vX.Y.Z`) on every build.
+

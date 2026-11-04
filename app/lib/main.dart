@@ -19,6 +19,7 @@ void main() async {
     sharedPreferences = await SharedPreferences.getInstance();
   } catch (e) {
     debugPrint('⚠️ Erreur SharedPreferences: $e');
+    // ignore: invalid_use_of_visible_for_testing_member
     SharedPreferences.setMockInitialValues({});
     sharedPreferences = await SharedPreferences.getInstance();
   }

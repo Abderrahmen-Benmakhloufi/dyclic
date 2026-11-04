@@ -81,6 +81,8 @@ class ReadingSettings {
   final bool focusRulerEnabled;
   final LearnerLevel learnerLevel;
   final bool isOnboardingCompleted;
+  final bool hasCompletedCalibration;
+  final int syllableColorCount; // 2, 3, or 4 distinct alternating colors
 
   const ReadingSettings({
     this.fontSize = 18.0,
@@ -92,6 +94,8 @@ class ReadingSettings {
     this.focusRulerEnabled = false,
     this.learnerLevel = LearnerLevel.moyen,
     this.isOnboardingCompleted = false,
+    this.hasCompletedCalibration = false,
+    this.syllableColorCount = 3,
   });
 
   ReadingSettings copyWith({
@@ -104,6 +108,8 @@ class ReadingSettings {
     bool? focusRulerEnabled,
     LearnerLevel? learnerLevel,
     bool? isOnboardingCompleted,
+    bool? hasCompletedCalibration,
+    int? syllableColorCount,
   }) {
     return ReadingSettings(
       fontSize: fontSize ?? this.fontSize,
@@ -115,6 +121,9 @@ class ReadingSettings {
       focusRulerEnabled: focusRulerEnabled ?? this.focusRulerEnabled,
       learnerLevel: learnerLevel ?? this.learnerLevel,
       isOnboardingCompleted: isOnboardingCompleted ?? this.isOnboardingCompleted,
+      hasCompletedCalibration:
+          hasCompletedCalibration ?? this.hasCompletedCalibration,
+      syllableColorCount: syllableColorCount ?? this.syllableColorCount,
     );
   }
 
@@ -131,7 +140,9 @@ class ReadingSettings {
           contrastPreset == other.contrastPreset &&
           focusRulerEnabled == other.focusRulerEnabled &&
           learnerLevel == other.learnerLevel &&
-          isOnboardingCompleted == other.isOnboardingCompleted;
+          isOnboardingCompleted == other.isOnboardingCompleted &&
+          hasCompletedCalibration == other.hasCompletedCalibration &&
+          syllableColorCount == other.syllableColorCount;
 
   @override
   int get hashCode =>
@@ -143,5 +154,7 @@ class ReadingSettings {
       contrastPreset.hashCode ^
       focusRulerEnabled.hashCode ^
       learnerLevel.hashCode ^
-      isOnboardingCompleted.hashCode;
+      isOnboardingCompleted.hashCode ^
+      hasCompletedCalibration.hashCode ^
+      syllableColorCount.hashCode;
 }

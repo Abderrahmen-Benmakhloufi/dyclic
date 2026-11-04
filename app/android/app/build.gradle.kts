@@ -42,3 +42,11 @@ android {
 flutter {
     source = "../.."
 }
+
+// Force Gradle to ALWAYS recompile Dart AOT code on release builds
+// to prevent stale cached libapp.so binaries
+tasks.matching {
+    it.name.startsWith("compileFlutterBuild") || it.name.startsWith("packJniLibsflutterBuild")
+}.configureEach {
+    outputs.upToDateWhen { false }
+}

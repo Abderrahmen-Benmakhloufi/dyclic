@@ -144,7 +144,7 @@ class LearnerProfile {
             if (mirrorLetterConfusion) 'Confusion b/d',
             if (visualInstability) 'Lettres mobiles',
             if (poorWordDecoding) 'Déchiffrage difficile',
-            if (needsVisualSpacing) 'Grands caractères',
+            if (needsVisualSpacing) 'Grandes lettres',
           ],
         ),
         DimensionResult(

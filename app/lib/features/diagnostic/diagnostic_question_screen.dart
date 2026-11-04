@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/learner_profile/learner_profile_model.dart';
 import 'data/diagnostic_questions.dart';
-import 'diagnostic_result_screen.dart';
+import 'diagnostic_review_screen.dart';
 
 // ---------------------------------------------------------------------------
 // DiagnosticQuestionScreen — Screen 2: one question at a time, 24 total
@@ -50,13 +49,19 @@ class _DiagnosticQuestionScreenState extends State<DiagnosticQuestionScreen> {
     }
   }
 
-  void _finish() {
-    final profile = LearnerProfile.fromAnswers(_answers);
-    Navigator.of(context).pushReplacement(
+  Future<void> _finish() async {
+    final result = await Navigator.of(context).push<String>(
       MaterialPageRoute(
-        builder: (_) => DiagnosticResultScreen(profile: profile),
+        builder: (_) => DiagnosticReviewScreen(answers: _answers),
       ),
     );
+
+    if (result == 'restart' && mounted) {
+      setState(() {
+        _answers.clear();
+        _currentIndex = 0;
+      });
+    }
   }
 
   // ── answer handlers ─────────────────────────────────────────────────────

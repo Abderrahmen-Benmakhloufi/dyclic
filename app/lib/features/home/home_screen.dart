@@ -4,7 +4,9 @@ import '../../core/reading_settings/reading_settings_model.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/theme/app_colors.dart';
 import '../reading_settings/reading_settings_sheet.dart';
+import '../reading_support/calibration/reading_calibration_screen.dart';
 import '../reading_support/reading_support_screen.dart';
+import '../decoding/decoding_screen.dart';
 import '../tts/tts_screen.dart';
 import '../writing/writing_screen.dart';
 import '../simplify/simplify_screen.dart';
@@ -94,8 +96,33 @@ class HomeScreen extends ConsumerWidget {
               icon: '📖',
               title: 'M’aider à lire',
               description: 'Faciliter la lecture du texte.',
+              onTap: () {
+                final currentSettings = ref.read(readingSettingsProvider);
+                if (!currentSettings.hasCompletedCalibration) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ReadingCalibrationScreen(),
+                    ),
+                  );
+                } else {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ReadingSupportScreen(),
+                    ),
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 14),
+
+            // Aide au décodage (Lettres et sons)
+            _buildFeatureCard(
+              context: context,
+              icon: '🔤',
+              title: 'Aide au décodage',
+              description: 'Découvrir comment se prononcent les lettres et les sons.',
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ReadingSupportScreen()),
+                MaterialPageRoute(builder: (_) => const DecodingScreen()),
               ),
             ),
             const SizedBox(height: 14),
@@ -144,6 +171,17 @@ class HomeScreen extends ConsumerWidget {
               description: 'Comprendre ce qu’on me demande de faire.',
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const InstructionsScreen()),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Center(
+              child: Text(
+                'v1.0.17',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary.withValues(alpha: 0.5),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],

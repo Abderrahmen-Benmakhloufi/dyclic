@@ -21,6 +21,11 @@
   <link rel="manifest" href="manifest.json">
 
   <style>
+    @font-face {
+      font-family: 'Arial';
+      src: local('Arial'), local('Helvetica'), local('sans-serif');
+    }
+
     body {
       margin: 0;
       padding: 0;
@@ -169,6 +174,41 @@
     window.addEventListener('unhandledrejection', function (e) {
       showBrowserError(e.reason ? (e.reason.message || e.reason.toString()) : e.toString());
     });
+    // 6. Web Speech API robust helpers (TTS & Microphone)
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = function() {
+        window.speechSynthesis.getVoices();
+      };
+      window.speechSynthesis.getVoices();
+    }
+
+    window.playFrenchTts = function(text, rate) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      setTimeout(function() {
+        try {
+          var u = new SpeechSynthesisUtterance(text);
+          u.lang = 'fr-FR';
+          u.rate = rate || 0.9;
+          var voices = window.speechSynthesis.getVoices();
+          for (var i = 0; i < voices.length; i++) {
+            if (voices[i].lang && voices[i].lang.toLowerCase().startsWith('fr')) {
+              u.voice = voices[i];
+              break;
+            }
+          }
+          window.speechSynthesis.speak(u);
+        } catch (err) {
+          console.warn('TTS playback error:', err);
+        }
+      }, 35);
+    };
+
+    window.stopFrenchTts = function() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
   </script>
 
   <script src="flutter_bootstrap.js?v=20261025" async></script>

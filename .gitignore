@@ -26,6 +26,9 @@ app/android/**/GeneratedPluginRegistrant.java
 # Web
 app/build/web/
 
+# Binaries
+*.apk
+
 # Supabase
 supabase/.temp/
 supabase/.branches/

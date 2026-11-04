@@ -4,7 +4,6 @@ import '../../core/reading_settings/reading_settings_model.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/theme/app_colors.dart';
 import '../diagnostic/diagnostic_gate_screen.dart';
-import '../home/home_screen.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});

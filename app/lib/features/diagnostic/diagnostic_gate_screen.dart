@@ -104,16 +104,14 @@ class DiagnosticGateScreen extends ConsumerWidget {
                     // ── Privacy note ───────────────────────────────────────────
                     Padding(
                       padding: const EdgeInsets.only(bottom: 24),
-                      child: Center(
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 6,
-                          runSpacing: 4,
-                          children: [
-                            const Icon(Icons.lock_outline,
-                                size: 14, color: AppColors.textSecondary),
-                            Text(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.lock_outline,
+                              size: 14, color: AppColors.textSecondary),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
                               "Aucune donnée personnelle n'est collectée",
                               textAlign: TextAlign.center,
                               softWrap: true,
@@ -121,8 +119,8 @@ class DiagnosticGateScreen extends ConsumerWidget {
                                     color: AppColors.textSecondary,
                                   ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
