@@ -191,4 +191,68 @@ void main() {
     expect(find.text('Comprendre les consignes 💡'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+      'Action Verbs strip renders and filters instructions by command verb',
+      (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(createTestWidget());
+    await tester.pumpAndSettle();
+
+    // Verify Action Verbs row title
+    expect(find.text('Verbe de la consigne :'), findsOneWidget);
+
+    // Verify Action Verb chips
+    expect(find.textContaining('Relever (4)'), findsOneWidget);
+    expect(find.textContaining('Justifier / Vrai-Faux (5)'), findsOneWidget);
+    expect(find.textContaining('Identifier / Dégager (6)'), findsOneWidget);
+
+    // Tap Relever (4)
+    await tester.tap(find.textContaining('Relever (4)'));
+    await tester.pumpAndSettle();
+
+    // Verify list is filtered
+    expect(find.text('4 consignes disponibles'), findsOneWidget);
+    expect(find.text('Repérer une information explicite dans le texte'),
+        findsOneWidget);
+
+    // Tap 'Effacer' to clear action verb filter
+    expect(find.text('Effacer'), findsOneWidget);
+    await tester.tap(find.text('Effacer'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('17 consignes disponibles'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Each instruction card renders a quick audio button without triggering card tap',
+      (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(createTestWidget());
+    await tester.pumpAndSettle();
+
+    // Find quick audio listen button on cards
+    final audioButtons = find.text('Écouter');
+    expect(audioButtons, findsWidgets);
+
+    // Tap the first quick audio button
+    await tester.tap(audioButtons.first);
+    await tester.pump();
+
+    // Verify we remain on the list screen and do NOT push InstructionDetailScreen
+    expect(find.byType(InstructionDetailScreen), findsNothing);
+    expect(find.byType(InstructionsScreen), findsOneWidget);
+  });
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/tts/tts_service.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import 'instruction_detail_screen.dart';
 import 'models/instruction_model.dart';
@@ -19,21 +20,40 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  late final TtsService _ttsService;
+  bool _isPlaying = false;
+  String? _currentlySpeakingText;
+
   List<InstructionItem> _allInstructions = [];
   bool _isLoading = true;
 
   String _selectedCycle = 'all'; // 'all' | 'primaire' | 'college' | 'lycee'
   String _selectedType = 'all'; // 'all' | 'comprehension' | 'langue' | 'production'
+  String _selectedActionVerb = 'all'; // 'all' | 'relever' | 'justifier' | 'identifier' | 'transformer' | 'rediger'
 
   @override
   void initState() {
     super.initState();
+
+    _ttsService = ref.read(ttsServiceProvider);
+    _ttsService.isPlayingNotifier.addListener(_onTtsStateChanged);
 
     _searchController.addListener(() {
       setState(() {});
     });
 
     _loadData();
+  }
+
+  void _onTtsStateChanged() {
+    if (mounted) {
+      setState(() {
+        _isPlaying = _ttsService.isPlayingNotifier.value;
+        if (!_isPlaying) {
+          _currentlySpeakingText = null;
+        }
+      });
+    }
   }
 
   Future<void> _loadData() async {
@@ -46,8 +66,39 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
     }
   }
 
+  Future<void> _speakText(String text) async {
+    if (_isPlaying && _currentlySpeakingText == text) {
+      await _ttsService.stop();
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+          _currentlySpeakingText = null;
+        });
+      }
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isPlaying = true;
+        _currentlySpeakingText = text;
+      });
+    }
+
+    await _ttsService.speakText(text);
+
+    if (mounted) {
+      setState(() {
+        _isPlaying = false;
+        _currentlySpeakingText = null;
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _ttsService.isPlayingNotifier.removeListener(_onTtsStateChanged);
+    _ttsService.stop();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -58,6 +109,7 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
       items: _allInstructions,
       cycle: _selectedCycle,
       questionType: _selectedType,
+      actionVerb: _selectedActionVerb,
       query: _searchController.text,
     );
   }
@@ -74,6 +126,11 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
     return _allInstructions
         .where((i) => i.questionType.toLowerCase() == type.toLowerCase())
         .length;
+  }
+
+  int _countForActionVerb(String verbKey) {
+    if (verbKey == 'all') return _allInstructions.length;
+    return _allInstructions.where((i) => i.matchesActionVerb(verbKey)).length;
   }
 
   void _navigateToDetail(InstructionItem item) {
@@ -136,12 +193,20 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
                   // 2. Primary Question Type Filter Tabs (Visual Coding Signal)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: _buildTypeTabs(settings.fontFamily),
                     ),
                   ),
 
-                  // 3. Search Bar + School Level Chips Row
+                  // 3. Fast Action Verbs Strip (Direct match with exam command verbs)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _buildActionVerbsRow(settings.fontFamily),
+                    ),
+                  ),
+
+                  // 4. Search Bar + School Level Chips Row
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -149,7 +214,7 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
                     ),
                   ),
 
-                  // 4. Instructions Counter & Reset Action (Hairline seam)
+                  // 5. Instructions Counter & Reset Action (Hairline seam)
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -171,13 +236,15 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
                           ),
                           if (_searchController.text.isNotEmpty ||
                               _selectedCycle != 'all' ||
-                              _selectedType != 'all')
+                              _selectedType != 'all' ||
+                              _selectedActionVerb != 'all')
                             GestureDetector(
                               onTap: () {
                                 setState(() {
                                   _searchController.clear();
                                   _selectedCycle = 'all';
                                   _selectedType = 'all';
+                                  _selectedActionVerb = 'all';
                                 });
                               },
                               child: Text(
@@ -352,6 +419,133 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
           );
         }).toList(),
       ),
+    );
+  }
+
+  /// Quick Action Verbs Row:
+  /// Allows students to filter by the exact command verb on their exam paper
+  Widget _buildActionVerbsRow(String? fontFamily) {
+    final verbs = [
+      (key: 'all', label: 'Tous les verbes', emoji: '✨'),
+      (key: 'relever', label: 'Relever', emoji: '🔍'),
+      (key: 'justifier', label: 'Justifier / Vrai-Faux', emoji: '⚖️'),
+      (key: 'identifier', label: 'Identifier / Dégager', emoji: '🏷️'),
+      (key: 'transformer', label: 'Transformer', emoji: '🔄'),
+      (key: 'rediger', label: 'Rédiger / Raconter', emoji: '✍️'),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
+          child: Row(
+            children: [
+              Text(
+                'Verbe de la consigne :',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                  fontFamily: fontFamily,
+                ),
+              ),
+              if (_selectedActionVerb != 'all') ...[
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () => setState(() => _selectedActionVerb = 'all'),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Effacer',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                            fontFamily: fontFamily,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(
+                          Icons.close_rounded,
+                          size: 13,
+                          color: AppColors.primary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 5),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: verbs.map((v) {
+              final isSelected = _selectedActionVerb == v.key;
+              final count = _countForActionVerb(v.key);
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    setState(() {
+                      _selectedActionVerb =
+                          isSelected && v.key != 'all' ? 'all' : v.key;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 11, vertical: 6.5),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primary.withValues(alpha: 0.14)
+                          : AppColors.surfaceCard,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.cardBorder,
+                        width: isSelected ? 1.4 : 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(v.emoji, style: const TextStyle(fontSize: 13)),
+                        const SizedBox(width: 5),
+                        Text(
+                          '${v.label} ($count)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.w600,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                            fontFamily: fontFamily,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 
@@ -551,11 +745,16 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
                   ),
                   const SizedBox(width: 8),
 
+                  // Quick Audio Listen Button (Écoute rapide 🔊)
+                  _buildQuickAudioButton(item, fontFamily),
+
+                  const SizedBox(width: 6),
+
                   // Forward Navigation Chevron
                   Container(
                     width: 28,
                     height: 28,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.background,
                       shape: BoxShape.circle,
                     ),
@@ -644,6 +843,68 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
     );
   }
 
+  /// Quick Audio Button on each card:
+  /// Allows students to instantly listen to the exam question text without opening the detail page
+  Widget _buildQuickAudioButton(InstructionItem item, String? fontFamily) {
+    final isThisPlaying =
+        _isPlaying && _currentlySpeakingText == item.originalFr;
+    final typeColor = item.questionTypeColor;
+
+    return Semantics(
+      button: true,
+      label: isThisPlaying
+          ? 'Arrêter la lecture'
+          : 'Écouter la consigne',
+      child: Tooltip(
+        message: isThisPlaying ? 'Arrêter la lecture' : 'Écouter la consigne',
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _speakText(item.originalFr),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
+            decoration: BoxDecoration(
+              color: isThisPlaying
+                  ? typeColor.withValues(alpha: 0.16)
+                  : AppColors.background,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isThisPlaying
+                    ? typeColor.withValues(alpha: 0.6)
+                    : AppColors.cardBorder,
+                width: isThisPlaying ? 1.4 : 1.0,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isThisPlaying
+                      ? Icons.stop_rounded
+                      : Icons.volume_up_rounded,
+                  size: 15,
+                  color: isThisPlaying ? typeColor : AppColors.textSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  isThisPlaying ? 'Stop' : 'Écouter',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight:
+                        isThisPlaying ? FontWeight.bold : FontWeight.w600,
+                    color:
+                        isThisPlaying ? typeColor : AppColors.textSecondary,
+                    fontFamily: fontFamily,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyState(String? fontFamily) {
     return Center(
       child: Padding(
@@ -688,6 +949,7 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
                   _searchController.clear();
                   _selectedCycle = 'all';
                   _selectedType = 'all';
+                  _selectedActionVerb = 'all';
                 });
               },
             ),

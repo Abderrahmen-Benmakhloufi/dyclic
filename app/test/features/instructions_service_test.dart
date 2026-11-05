@@ -139,5 +139,34 @@ void main() {
           service.filterAndSearch(items: instructions, query: '   ');
       expect(emptyResults.length, 17);
     });
+
+    test('Filter by actionVerb matches exam commands correctly', () {
+      final service = InstructionsService.instance;
+
+      final relever =
+          service.filterAndSearch(items: instructions, actionVerb: 'relever');
+      expect(relever.length, 4);
+      expect(relever.every((i) => i.matchesActionVerb('relever')), isTrue);
+
+      final justifier =
+          service.filterAndSearch(items: instructions, actionVerb: 'justifier');
+      expect(justifier.length, 5);
+      expect(justifier.every((i) => i.matchesActionVerb('justifier')), isTrue);
+
+      final identifier =
+          service.filterAndSearch(items: instructions, actionVerb: 'identifier');
+      expect(identifier.length, 6);
+      expect(identifier.every((i) => i.matchesActionVerb('identifier')), isTrue);
+
+      final transformer =
+          service.filterAndSearch(items: instructions, actionVerb: 'transformer');
+      expect(transformer.length, 3);
+      expect(transformer.every((i) => i.matchesActionVerb('transformer')), isTrue);
+
+      final rediger =
+          service.filterAndSearch(items: instructions, actionVerb: 'rediger');
+      expect(rediger.length, 4);
+      expect(rediger.every((i) => i.matchesActionVerb('rediger')), isTrue);
+    });
   });
 }

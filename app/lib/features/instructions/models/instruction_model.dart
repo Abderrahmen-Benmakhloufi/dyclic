@@ -133,6 +133,38 @@ class InstructionItem {
     return questionTypeColor.withValues(alpha: 0.12);
   }
 
+  /// Checks whether this instruction matches an action verb filter
+  bool matchesActionVerb(String verbKey) {
+    if (verbKey == 'all' || verbKey.isEmpty) return true;
+    final text = '$originalFr $title'.toLowerCase();
+    switch (verbKey.toLowerCase()) {
+      case 'relever':
+        return text.contains('relèv') || text.contains('relev');
+      case 'justifier':
+        return text.contains('justifi') ||
+            text.contains('vrai') ||
+            text.contains('faux') ||
+            text.contains('démontr');
+      case 'identifier':
+        return text.contains('identifi') ||
+            text.contains('dégag') ||
+            text.contains('soulign') ||
+            text.contains('visée');
+      case 'transformer':
+        return text.contains('réécri') ||
+            text.contains('transpos') ||
+            text.contains('remplaç') ||
+            text.contains('transform');
+      case 'rediger':
+        return text.contains('rédig') ||
+            text.contains('racont') ||
+            text.contains('plaidoyer') ||
+            text.contains('compte-rendu');
+      default:
+        return true;
+    }
+  }
+
   /// Check whether this instruction matches a search query
   bool matchesQuery(String query) {
     if (query.trim().isEmpty) return true;

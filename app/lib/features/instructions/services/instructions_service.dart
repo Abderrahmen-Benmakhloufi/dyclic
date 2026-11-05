@@ -40,11 +40,12 @@ class InstructionsService {
   /// Synchronous getter if already loaded
   List<InstructionItem> get cachedItems => _cachedInstructions ?? [];
 
-  /// Filters a list of instructions by cycle, questionType, and search query
+  /// Filters a list of instructions by cycle, questionType, actionVerb, and search query
   List<InstructionItem> filterAndSearch({
     required List<InstructionItem> items,
     String cycle = 'all', // 'all' | 'primaire' | 'college' | 'lycee'
     String questionType = 'all', // 'all' | 'comprehension' | 'langue' | 'production'
+    String actionVerb = 'all', // 'all' | 'relever' | 'justifier' | 'identifier' | 'transformer' | 'rediger'
     String query = '',
   }) {
     return items.where((item) {
@@ -59,7 +60,12 @@ class InstructionsService {
         return false;
       }
 
-      // 3. Search query filter
+      // 3. Action verb filter
+      if (actionVerb != 'all' && !item.matchesActionVerb(actionVerb)) {
+        return false;
+      }
+
+      // 4. Search query filter
       if (query.trim().isNotEmpty && !item.matchesQuery(query)) {
         return false;
       }
