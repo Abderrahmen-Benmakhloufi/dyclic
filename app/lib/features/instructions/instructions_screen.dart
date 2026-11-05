@@ -700,7 +700,7 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
                       runSpacing: 4,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        // Level Badge
+                        // School Cycle Badge ONLY (الطور فقط: 🎒 Primaire, 📚 Collège, 🎓 Lycée)
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3.5),
@@ -710,9 +710,7 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
                             border: Border.all(color: AppColors.cardBorder),
                           ),
                           child: Text(
-                            item.level.isNotEmpty
-                                ? item.level
-                                : item.cycleEmojiLabel,
+                            item.cycleEmojiLabel,
                             style: TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w600,
