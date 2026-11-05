@@ -7,8 +7,10 @@ import '../../core/tts/tts_service.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import 'models/instruction_model.dart';
 
-/// Dedicated screen that shows the complete step-by-step deconstruction
-/// of an exam instruction without visual clutter or accordion toggles.
+/// Hallmark-Crafted Instruction Detail Screen:
+/// - Editorial clarity and unnested surfaces (The Floor § 11, Craft § 3)
+/// - Question type visual coding as a purposeful signal (Craft § 2)
+/// - Relaxed typographic hierarchy with high legibility for young learners (Craft § 1)
 class InstructionDetailScreen extends ConsumerStatefulWidget {
   final InstructionItem item;
 
@@ -93,6 +95,7 @@ class _InstructionDetailScreenState
       appBar: AppBar(
         backgroundColor: palette.background,
         elevation: 0,
+        scrolledUnderElevation: 1,
         centerTitle: false,
         leading: IconButton(
           icon: Icon(
@@ -129,26 +132,22 @@ class _InstructionDetailScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Header Badges & Title
-              _buildHeaderSection(item, fontFamily, palette),
+              // 1. Unified Hero Question Card (Hallmark unnested surface)
+              _buildUnifiedQuestionCard(item, fontFamily, palette),
               const SizedBox(height: 16),
 
-              // 2. Official Exam Question Box
-              _buildOfficialQuestionCard(item, fontFamily, palette),
-              const SizedBox(height: 18),
-
-              // 3. Goal Callout Banner ("Que dois-tu faire ?")
+              // 2. Goal Callout Banner ("Que dois-tu faire ?")
               _buildGoalBanner(fontFamily),
               const SizedBox(height: 18),
 
-              // 4. Section Title
+              // 3. Section Title
               Row(
                 children: [
                   Container(
                     width: 4,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color: item.questionTypeColor,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -166,12 +165,12 @@ class _InstructionDetailScreenState
               ),
               const SizedBox(height: 12),
 
-              // 5. Numbered Steps List
+              // 4. Numbered Steps Sequence
               ...item.steps.map((step) => _buildStepCard(step, fontFamily, palette)),
 
               const SizedBox(height: 20),
 
-              // 6. Understood / Back Action Button
+              // 5. Completion Action Button
               ElevatedButton.icon(
                 icon: const Icon(Icons.check_circle_outline_rounded, size: 20),
                 label: const Text('J\'ai bien compris cette consigne ! 🎉'),
@@ -199,13 +198,19 @@ class _InstructionDetailScreenState
     );
   }
 
-  Widget _buildHeaderSection(
+  /// Hallmark Unified Question Card: Combines title, tags, and official question
+  /// onto a single cohesive surface with zero nested boxes
+  Widget _buildUnifiedQuestionCard(
     InstructionItem item,
     String? fontFamily,
     ReadingPalette palette,
   ) {
+    final typeColor = item.questionTypeColor;
+    final typeBg = item.questionTypeLightColor;
+    final isSpeakingOriginal =
+        _isPlaying && _currentlySpeakingText == item.originalFr;
+
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: BorderRadius.circular(20),
@@ -218,36 +223,17 @@ class _InstructionDetailScreenState
           ),
         ],
       ),
+      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Badges Wrap
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          // Metadata Tags Row
+          Row(
             children: [
-              // ID
+              // Level Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  item.id,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                    fontFamily: fontFamily,
-                  ),
-                ),
-              ),
-
-              // Level / Cycle
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
                   color: palette.background,
                   borderRadius: BorderRadius.circular(8),
@@ -263,12 +249,14 @@ class _InstructionDetailScreenState
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
 
-              // Question Type Badge
+              // Question Type Badge (Quiet signal tint)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
-                  color: item.questionTypeLightColor,
+                  color: typeBg,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -276,7 +264,7 @@ class _InstructionDetailScreenState
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: item.questionTypeColor,
+                    color: typeColor,
                     fontFamily: fontFamily,
                   ),
                 ),
@@ -289,15 +277,15 @@ class _InstructionDetailScreenState
           Text(
             item.title,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 18.5,
               fontWeight: FontWeight.bold,
-              height: 1.35,
+              height: 1.3,
               color: palette.textPrimary,
               fontFamily: fontFamily,
             ),
           ),
           if (item.domain.isNotEmpty) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               'Domaine : ${item.domain}',
               style: TextStyle(
@@ -307,72 +295,52 @@ class _InstructionDetailScreenState
               ),
             ),
           ],
-        ],
-      ),
-    );
-  }
+          const SizedBox(height: 14),
 
-  Widget _buildOfficialQuestionCard(
-    InstructionItem item,
-    String? fontFamily,
-    ReadingPalette palette,
-  ) {
-    final isSpeakingOriginal =
-        _isPlaying && _currentlySpeakingText == item.originalFr;
+          // Hairline Seam
+          Divider(height: 1, thickness: 1, color: palette.border),
+          const SizedBox(height: 14),
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFBF8F2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE8E0D4), width: 1.4),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+          // Official Question Header + Audio Action
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.verified_rounded,
-                      color: AppColors.primary,
-                      size: 19,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.verified_rounded,
+                    color: typeColor,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Énoncé officiel d\'examen',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: typeColor,
+                      fontFamily: fontFamily,
                     ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        'Énoncé officiel d\'examen',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                          fontFamily: fontFamily,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
               // Listen button
               InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () => _speakText(item.originalFr),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
                   decoration: BoxDecoration(
                     color: isSpeakingOriginal
-                        ? AppColors.primary
-                        : Colors.white,
+                        ? typeColor
+                        : palette.background,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isSpeakingOriginal
-                          ? AppColors.primary
-                          : const Color(0xFFDED6C8),
+                          ? typeColor
+                          : palette.border,
                     ),
                   ),
                   child: Row(
@@ -385,7 +353,7 @@ class _InstructionDetailScreenState
                         size: 16,
                         color: isSpeakingOriginal
                             ? Colors.white
-                            : AppColors.primary,
+                            : typeColor,
                       ),
                       const SizedBox(width: 5),
                       Text(
@@ -395,7 +363,7 @@ class _InstructionDetailScreenState
                           fontWeight: FontWeight.bold,
                           color: isSpeakingOriginal
                               ? Colors.white
-                              : AppColors.primary,
+                              : typeColor,
                           fontFamily: fontFamily,
                         ),
                       ),
@@ -405,23 +373,16 @@ class _InstructionDetailScreenState
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE8E0D4)),
-            ),
-            child: Text(
-              item.originalFr,
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.5,
-                color: AppColors.textPrimary,
-                fontFamily: fontFamily,
-              ),
+          const SizedBox(height: 10),
+
+          // Question Text (Direct, accessible typography with 1.5 line height)
+          Text(
+            '« ${item.originalFr} »',
+            style: TextStyle(
+              fontSize: 15,
+              height: 1.55,
+              color: palette.textPrimary,
+              fontFamily: fontFamily,
             ),
           ),
         ],
@@ -432,11 +393,11 @@ class _InstructionDetailScreenState
   Widget _buildGoalBanner(String? fontFamily) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
-        color: AppColors.secondary.withValues(alpha: 0.22),
+        color: AppColors.secondary.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.55)),
+        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.45)),
       ),
       child: Row(
         children: [
@@ -480,6 +441,7 @@ class _InstructionDetailScreenState
     String? fontFamily,
     ReadingPalette palette,
   ) {
+    final typeColor = widget.item.questionTypeColor;
     final isSpeakingThisStep =
         _isPlaying && _currentlySpeakingText == step.textFr;
 
@@ -488,19 +450,19 @@ class _InstructionDetailScreenState
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: palette.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSpeakingThisStep
-              ? AppColors.primary
+              ? typeColor
               : palette.border,
-          width: isSpeakingThisStep ? 1.8 : 1.2,
+          width: isSpeakingThisStep ? 1.8 : 1.1,
         ),
         boxShadow: [
           BoxShadow(
             color: isSpeakingThisStep
-                ? AppColors.primary.withValues(alpha: 0.08)
+                ? typeColor.withValues(alpha: 0.08)
                 : Colors.black.withValues(alpha: 0.02),
-            blurRadius: isSpeakingThisStep ? 10 : 4,
+            blurRadius: isSpeakingThisStep ? 8 : 4,
             offset: const Offset(0, 2),
           ),
         ],
@@ -508,13 +470,13 @@ class _InstructionDetailScreenState
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Step number circle
+          // Step number circle in question type signal color
           Container(
             width: 32,
             height: 32,
             margin: const EdgeInsets.only(top: 1),
             decoration: BoxDecoration(
-              color: widget.item.questionTypeColor,
+              color: typeColor,
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -538,9 +500,9 @@ class _InstructionDetailScreenState
                 Text(
                   'Étape ${step.stepNumber}',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.bold,
-                    color: widget.item.questionTypeColor,
+                    color: typeColor,
                     fontFamily: fontFamily,
                   ),
                 ),
@@ -549,7 +511,7 @@ class _InstructionDetailScreenState
                   step.textFr,
                   style: TextStyle(
                     fontSize: 14.5,
-                    height: 1.48,
+                    height: 1.5,
                     color: palette.textPrimary,
                     fontFamily: fontFamily,
                   ),
@@ -559,7 +521,7 @@ class _InstructionDetailScreenState
           ),
           const SizedBox(width: 6),
 
-          // Mini speaker button
+          // Speaker Button
           IconButton(
             icon: Icon(
               isSpeakingThisStep
@@ -567,7 +529,7 @@ class _InstructionDetailScreenState
                   : Icons.volume_up_outlined,
               size: 22,
               color: isSpeakingThisStep
-                  ? AppColors.primary
+                  ? typeColor
                   : AppColors.textSecondary,
             ),
             tooltip: 'Écouter cette étape',

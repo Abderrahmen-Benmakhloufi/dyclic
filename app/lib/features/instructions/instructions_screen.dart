@@ -125,31 +125,31 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
             : CustomScrollView(
                 controller: _scrollController,
                 slivers: [
-                  // 1. Compact Reassuring Header Banner (with single flower in circle)
+                  // 1. Hallmark Canvas Header: Natural breathing room, no artificial box border
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-                      child: _buildCompactBanner(settings.fontFamily),
+                      padding: const EdgeInsets.fromLTRB(18, 6, 18, 12),
+                      child: _buildCanvasHeader(settings.fontFamily),
                     ),
                   ),
 
-                  // 2. Primary Question Type Filter Tabs (Proposal A - Visual Coding)
+                  // 2. Primary Question Type Filter Tabs (Visual Coding Signal)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
                       child: _buildTypeTabs(settings.fontFamily),
                     ),
                   ),
 
-                  // 3. Search Bar + Level Filter row
+                  // 3. Search Bar + School Level Chips Row
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: _buildSearchAndLevelRow(settings.fontFamily),
                     ),
                   ),
 
-                  // 4. Instructions Counter & Reset Action
+                  // 4. Instructions Counter & Reset Action (Hairline seam)
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -195,7 +195,7 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
                     ),
                   ),
 
-                  // 5. Cards List or Empty State
+                  // 5. Hallmark Cards List (Editorial presentation without nested cards)
                   if (filteredList.isEmpty)
                     SliverFillRemaining(
                       hasScrollBody: false,
@@ -203,7 +203,7 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 28),
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
@@ -226,68 +226,56 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
     );
   }
 
-  Widget _buildCompactBanner(String? fontFamily) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.cardBorder, width: 1.1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+  /// Hallmark Canvas Header: Sits directly on the background canvas with proper breathing room
+  Widget _buildCanvasHeader(String? fontFamily) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Single Tulip inside large intentional circular container
+        Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Single Tulip in Large Circular Container
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Text('🌷', style: TextStyle(fontSize: 22)),
-            ),
+          child: const Center(
+            child: Text('🌷', style: TextStyle(fontSize: 24)),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '17 consignes d’examens expliquées pas à pas',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                    fontFamily: fontFamily,
-                  ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '17 consignes d’examens expliquées pas à pas',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  height: 1.25,
+                  color: AppColors.textPrimary,
+                  fontFamily: fontFamily,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Choisis une question pour découvrir sa méthode.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                    fontFamily: fontFamily,
-                  ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Choisis une question pour découvrir sa méthode.',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: AppColors.textSecondary,
+                  fontFamily: fontFamily,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  /// Primary Visual Coding Tabs: Each question type has its own distinct color
+  /// Primary Visual Coding Tabs: Clear signal colors with high contrast active states
   Widget _buildTypeTabs(String? fontFamily) {
     final types = [
       {
@@ -379,7 +367,7 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Search TextField
+        // Search Input with clear styling
         Container(
           height: 44,
           decoration: BoxDecoration(
@@ -421,7 +409,7 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
         ),
         const SizedBox(height: 8),
 
-        // School Level Chips
+        // School Level Filter Chips
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
@@ -474,11 +462,11 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
     );
   }
 
-  /// Clean, de-cluttered card:
-  /// - Left color stripe matching the question type
-  /// - No cryptic IDs (like PRI-01)
-  /// - Full question text (NOT truncated)
-  /// - Step count badge and clear action link
+  /// Hallmark-Grade Card Architecture:
+  /// - NO nested card inside card (The Floor § 11, Craft § 3)
+  /// - Clear Typographic Hierarchy (Craft § 1)
+  /// - The Accent is a Signal, Not a Fill (Craft § 2)
+  /// - Complete exam question text with generous line spacing
   Widget _buildInstructionCard({
     required InstructionItem item,
     required String? fontFamily,
@@ -500,218 +488,156 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 8,
-                offset: const Offset(0, 3),
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Metadata Header Row (Clean, unnested tags)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Distinct Question Type Left Color Stripe
-                  Container(
-                    width: 5,
-                    color: typeColor,
-                  ),
-
-                  // Card Content
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 1. Header Badges: Level & Question Type
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Wrap(
-                                  spacing: 6,
-                                  runSpacing: 4,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
-                                    // Level badge
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.background,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: AppColors.cardBorder),
-                                      ),
-                                      child: Text(
-                                        item.level.isNotEmpty
-                                            ? item.level
-                                            : item.cycleEmojiLabel,
-                                        style: TextStyle(
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.textSecondary,
-                                          fontFamily: fontFamily,
-                                        ),
-                                      ),
-                                    ),
-
-                                    // Type badge (colored distinctly)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: typeBg,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        '${item.questionTypeEmoji} ${item.questionTypeLabel}',
-                                        style: TextStyle(
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.bold,
-                                          color: typeColor,
-                                          fontFamily: fontFamily,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-
-                              // Forward Chevron Button
-                              Container(
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  color: typeBg,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.arrow_forward_rounded,
-                                  color: typeColor,
-                                  size: 16,
-                                ),
-                              ),
-                            ],
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        // Level Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.cardBorder),
                           ),
-                          const SizedBox(height: 10),
-
-                          // 2. Title
-                          Text(
-                            item.title,
+                          child: Text(
+                            item.level.isNotEmpty
+                                ? item.level
+                                : item.cycleEmojiLabel,
                             style: TextStyle(
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.bold,
-                              height: 1.3,
-                              color: AppColors.textPrimary,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
                               fontFamily: fontFamily,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                        ),
 
-                          // 3. COMPLETE Exam Question Text (NON-TRUNCATED)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(11),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFBF8F2),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFFE8E0D4),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.format_quote_rounded,
-                                      size: 16,
-                                      color: typeColor,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        'Exemple officiel d\'examen',
-                                        style: TextStyle(
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.bold,
-                                          color: typeColor,
-                                          fontFamily: fontFamily,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  item.originalFr,
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    color: AppColors.textPrimary,
-                                    height: 1.45,
-                                    fontFamily: fontFamily,
-                                  ),
-                                ),
-                              ],
+                        // Question Type Badge (Quiet signal tint)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: typeBg,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${item.questionTypeEmoji} ${item.questionTypeLabel}',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                              color: typeColor,
+                              fontFamily: fontFamily,
                             ),
                           ),
-                          const SizedBox(height: 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
 
-                          // 4. Bottom action link: Step count + "Voir la méthode ➔"
-                          Wrap(
-                            alignment: WrapAlignment.spaceBetween,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 8,
-                            runSpacing: 6,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: typeBg,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  '${item.steps.length} étapes décortiquées',
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: typeColor,
-                                    fontFamily: fontFamily,
-                                  ),
-                                ),
-                              ),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'Voir la méthode',
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.bold,
-                                      color: typeColor,
-                                      fontFamily: fontFamily,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.chevron_right_rounded,
-                                    size: 18,
-                                    color: typeColor,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                  // Forward Navigation Chevron
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      color: typeColor,
+                      size: 16,
                     ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 12),
+
+              // 2. Title: Strong, crisp display
+              Text(
+                item.title,
+                style: TextStyle(
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.bold,
+                  height: 1.3,
+                  color: AppColors.textPrimary,
+                  fontFamily: fontFamily,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // 3. Question Text: Direct typographic presentation (NO nested bordered box)
+              Text(
+                '« ${item.originalFr} »',
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: AppColors.textPrimary.withValues(alpha: 0.88),
+                  fontStyle: FontStyle.italic,
+                  fontFamily: fontFamily,
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // 4. Subtle Hairline Seam (Surface Ladder)
+              const Divider(height: 1, thickness: 1, color: AppColors.cardBorder),
+              const SizedBox(height: 10),
+
+              // 5. Bottom Action Row
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  Text(
+                    '${item.steps.length} étapes décortiquées',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                      fontFamily: fontFamily,
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Voir la méthode',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.bold,
+                          color: typeColor,
+                          fontFamily: fontFamily,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: typeColor,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
