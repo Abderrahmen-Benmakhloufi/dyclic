@@ -162,10 +162,10 @@ void main() {
     expect(find.byType(InstructionDetailScreen), findsOneWidget);
     expect(find.text('Explication pas à pas'), findsOneWidget);
     expect(find.text('Énoncé officiel d\'examen'), findsOneWidget);
-    expect(find.text('Que dois-tu faire ?'), findsOneWidget);
-    expect(find.textContaining('Les étapes pour réussir'), findsOneWidget);
+    expect(find.textContaining('Comment répondre ?'), findsOneWidget);
+    expect(find.textContaining('Que dois-tu faire ?'), findsOneWidget);
     expect(find.text('Étape 1'), findsOneWidget);
-    expect(find.text('J\'ai bien compris cette consigne ! 🎉'), findsOneWidget);
+    expect(find.text('J\'ai bien compris cette consigne'), findsOneWidget);
 
     // Tap back button
     await tester.tap(find.byTooltip('Retour'));

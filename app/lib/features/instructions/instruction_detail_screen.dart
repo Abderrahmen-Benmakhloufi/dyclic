@@ -8,9 +8,10 @@ import '../reading_settings/reading_settings_sheet.dart';
 import 'models/instruction_model.dart';
 
 /// Hallmark-Crafted Instruction Detail Screen:
-/// - Editorial clarity and unnested surfaces (The Floor § 11, Craft § 3)
-/// - Question type visual coding as a purposeful signal (Craft § 2)
-/// - Relaxed typographic hierarchy with high legibility for young learners (Craft § 1)
+/// - Question is the prominent HERO of the screen (larger than title)
+/// - Question type only (level badge removed for focus)
+/// - Distinctive pedagogical transition from Question to Answer/Method
+/// - No celebration emoji on completion button
 class InstructionDetailScreen extends ConsumerStatefulWidget {
   final InstructionItem item;
 
@@ -132,48 +133,21 @@ class _InstructionDetailScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Unified Hero Question Card (Hallmark unnested surface)
-              _buildUnifiedQuestionCard(item, fontFamily, palette),
-              const SizedBox(height: 16),
+              // 1. Question Hero Card: Question stands out with maximum prominence
+              _buildQuestionHeroCard(item, fontFamily, palette),
 
-              // 2. Goal Callout Banner ("Que dois-tu faire ?")
-              _buildGoalBanner(fontFamily),
-              const SizedBox(height: 18),
+              // 2. Distinctive Transition Bridge from Question to Answer
+              _buildTransitionBridge(item, fontFamily),
 
-              // 3. Section Title
-              Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: item.questionTypeColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Les étapes pour réussir (${item.steps.length} étapes) 📋',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: palette.textPrimary,
-                      fontFamily: fontFamily,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // 4. Numbered Steps Sequence
+              // 3. Numbered Steps Sequence (The Answer / Method)
               ...item.steps.map((step) => _buildStepCard(step, fontFamily, palette)),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-              // 5. Completion Action Button
+              // 4. Completion Action Button (without celebration emoji)
               ElevatedButton.icon(
                 icon: const Icon(Icons.check_circle_outline_rounded, size: 20),
-                label: const Text('J\'ai bien compris cette consigne ! 🎉'),
+                label: const Text('J\'ai bien compris cette consigne'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -190,7 +164,7 @@ class _InstructionDetailScreenState
                 ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
             ],
           ),
         ),
@@ -198,9 +172,11 @@ class _InstructionDetailScreenState
     );
   }
 
-  /// Hallmark Unified Question Card: Combines title, tags, and official question
-  /// onto a single cohesive surface with zero nested boxes
-  Widget _buildUnifiedQuestionCard(
+  /// Question Hero Card:
+  /// - Only Question Type badge (school level removed)
+  /// - The Exam Question is THE HERO: bold, large (18.5px), high contrast
+  /// - The title serves as a calm secondary category orientation
+  Widget _buildQuestionHeroCard(
     InstructionItem item,
     String? fontFamily,
     ReadingPalette palette,
@@ -213,7 +189,7 @@ class _InstructionDetailScreenState
     return Container(
       decoration: BoxDecoration(
         color: palette.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: palette.border, width: 1.2),
         boxShadow: [
           BoxShadow(
@@ -227,37 +203,17 @@ class _InstructionDetailScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Metadata Tags Row
+          // 1. Top Bar: Question Type Only + Secondary Title/Domain
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Level Badge
+              // Question Type Badge ONLY (Level removed as requested)
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: palette.background,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: palette.border),
-                ),
-                child: Text(
-                  item.level.isNotEmpty ? item.level : item.cycleEmojiLabel,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: palette.textPrimary,
-                    fontFamily: fontFamily,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-
-              // Question Type Badge (Quiet signal tint)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
                 decoration: BoxDecoration(
                   color: typeBg,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(9),
                 ),
                 child: Text(
                   '${item.questionTypeEmoji} ${item.questionTypeLabel}',
@@ -269,39 +225,26 @@ class _InstructionDetailScreenState
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
+
+              // Title as subtle context orientation
+              Expanded(
+                child: Text(
+                  item.title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                    fontFamily: fontFamily,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // Title
-          Text(
-            item.title,
-            style: TextStyle(
-              fontSize: 18.5,
-              fontWeight: FontWeight.bold,
-              height: 1.3,
-              color: palette.textPrimary,
-              fontFamily: fontFamily,
-            ),
-          ),
-          if (item.domain.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Domaine : ${item.domain}',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-                fontFamily: fontFamily,
-              ),
-            ),
-          ],
           const SizedBox(height: 14),
 
-          // Hairline Seam
-          Divider(height: 1, thickness: 1, color: palette.border),
-          const SizedBox(height: 14),
-
-          // Official Question Header + Audio Action
+          // 2. Official Exam Label + Audio Button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -373,14 +316,16 @@ class _InstructionDetailScreenState
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
-          // Question Text (Direct, accessible typography with 1.5 line height)
+          // 3. THE QUESTION ITSELF: THE STAR OF THE SCREEN
+          // Noticeable, bold, large typography with rich line height
           Text(
             '« ${item.originalFr} »',
             style: TextStyle(
-              fontSize: 15,
-              height: 1.55,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              height: 1.5,
               color: palette.textPrimary,
               fontFamily: fontFamily,
             ),
@@ -390,42 +335,84 @@ class _InstructionDetailScreenState
     );
   }
 
-  Widget _buildGoalBanner(String? fontFamily) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: BoxDecoration(
-        color: AppColors.secondary.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.45)),
-      ),
-      child: Row(
+  /// Distinctive Transition Bridge:
+  /// Clearly separates the Question (Énoncé) from the Answer/Method (Les Étapes)
+  Widget _buildTransitionBridge(InstructionItem item, String? fontFamily) {
+    final typeColor = item.questionTypeColor;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Column(
         children: [
-          const Icon(
-            Icons.help_outline_rounded,
-            color: AppColors.primary,
-            size: 22,
+          // Visual Downward Arrow Indicator
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: typeColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.arrow_downward_rounded,
+              color: typeColor,
+              size: 18,
+            ),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Que dois-tu faire ?',
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                    fontFamily: fontFamily,
-                  ),
+          const SizedBox(height: 10),
+
+          // Transition Banner: Clear Shift from Question to Method/Answer
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceCard,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: typeColor.withValues(alpha: 0.4),
+                width: 1.4,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: typeColor.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                Text(
-                  'Suis les étapes ci-dessous une à une pour réussir.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                    fontFamily: fontFamily,
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: typeColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text('💡', style: TextStyle(fontSize: 20)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Comment répondre ? — La méthode pas à pas',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: typeColor,
+                          fontFamily: fontFamily,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Que dois-tu faire ? Suis ces ${item.steps.length} étapes pour réussir :',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          fontFamily: fontFamily,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
