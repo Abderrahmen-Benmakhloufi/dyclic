@@ -478,26 +478,8 @@ class _InstructionDetailScreenState
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Step number circle in question type signal color
-          Container(
-            width: 32,
-            height: 32,
-            margin: const EdgeInsets.only(top: 1),
-            decoration: BoxDecoration(
-              color: typeColor,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                '${step.stepNumber}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
+          // Step indicator: Character holding number for Primaire & Collège, circle for Lycée
+          _buildStepIndicator(step, typeColor, widget.item.cycle),
           const SizedBox(width: 12),
 
           // Step content
@@ -546,6 +528,59 @@ class _InstructionDetailScreenState
             onPressed: () => _speakText(step.textFr),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Builds step indicator:
+  /// - Character holding number (1.png ... 5.png) for Primaire & Collège
+  /// - Minimalist numbered circle for Lycée
+  Widget _buildStepIndicator(
+    InstructionStep step,
+    Color typeColor,
+    String cycle,
+  ) {
+    final useCharacter = (cycle.toLowerCase() == 'primaire' ||
+            cycle.toLowerCase() == 'college') &&
+        step.stepNumber >= 1 &&
+        step.stepNumber <= 5;
+
+    if (useCharacter) {
+      return Container(
+        width: 48,
+        height: 50,
+        margin: const EdgeInsets.only(top: 1),
+        child: Image.asset(
+          'assets/images/characters/${step.stepNumber}.png',
+          width: 48,
+          height: 50,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => _buildFallbackCircle(step, typeColor),
+        ),
+      );
+    }
+
+    return _buildFallbackCircle(step, typeColor);
+  }
+
+  Widget _buildFallbackCircle(InstructionStep step, Color typeColor) {
+    return Container(
+      width: 32,
+      height: 32,
+      margin: const EdgeInsets.only(top: 1),
+      decoration: BoxDecoration(
+        color: typeColor,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          '${step.stepNumber}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
       ),
     );
   }

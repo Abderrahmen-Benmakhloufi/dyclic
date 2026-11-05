@@ -165,6 +165,7 @@ void main() {
     expect(find.textContaining('Comment répondre ?'), findsOneWidget);
     expect(find.textContaining('Que dois-tu faire ?'), findsOneWidget);
     expect(find.text('Étape 1'), findsOneWidget);
+    expect(find.byType(Image), findsWidgets); // Character holding numbers for Primaire
     expect(find.text('J\'ai bien compris cette consigne'), findsOneWidget);
 
     // Tap back button
