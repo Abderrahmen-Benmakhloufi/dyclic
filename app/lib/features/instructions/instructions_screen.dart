@@ -190,15 +190,31 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
                     ),
                   ),
 
-                  // 2. Primary Question Type Filter Tabs (Visual Coding Signal)
+                  // 2. Search Bar: Prominently on top above all filters (فوقهم زر البحث)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                      child: _buildSearchBar(settings.fontFamily),
+                    ),
+                  ),
+
+                  // 3. Filter 1: School Cycles (الفلترات فوق بعضها مباشرة)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _buildCycleChips(settings.fontFamily),
+                    ),
+                  ),
+
+                  // 4. Filter 2: Primary Question Type Filter Tabs
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
                       child: _buildTypeTabs(settings.fontFamily),
                     ),
                   ),
 
-                  // 3. Fast Action Verbs Strip (Direct match with exam command verbs)
+                  // 5. Filter 3: Fast Action Verbs Strip
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 10),
@@ -206,15 +222,7 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
                     ),
                   ),
 
-                  // 4. Search Bar + School Level Chips Row
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                      child: _buildSearchAndLevelRow(settings.fontFamily),
-                    ),
-                  ),
-
-                  // 5. Instructions Counter & Reset Action (Hairline seam)
+                  // 6. Instructions Counter & Reset Action (Hairline seam)
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -549,8 +557,51 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
     );
   }
 
-  /// Compact Search bar + School Level Selector Row
-  Widget _buildSearchAndLevelRow(String? fontFamily) {
+  /// Search Bar placed prominently ABOVE all filters (و فوقهم زر البحث)
+  Widget _buildSearchBar(String? fontFamily) {
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.cardBorder, width: 1.1),
+      ),
+      child: TextField(
+        controller: _searchController,
+        style: TextStyle(
+          fontSize: 14,
+          color: AppColors.textPrimary,
+          fontFamily: fontFamily,
+        ),
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
+          hintText: 'Rechercher une consigne (ex: relever, verbe, vrai...)',
+          hintStyle: TextStyle(
+            fontSize: 13,
+            color: AppColors.textSecondary.withValues(alpha: 0.65),
+            fontFamily: fontFamily,
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear_rounded,
+                      size: 18, color: AppColors.textSecondary),
+                  onPressed: () => _searchController.clear(),
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+
+  /// School Cycle Filter Chips (الطور - الفلترات فوق بعضها مباشرة)
+  Widget _buildCycleChips(String? fontFamily) {
     final cycles = [
       {'key': 'all', 'label': 'Tous les niveaux (${_countForCycle('all')})'},
       {'key': 'primaire', 'label': '🎒 Primaire (${_countForCycle('primaire')})'},
@@ -558,101 +609,55 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
       {'key': 'lycee', 'label': '🎓 Lycée (${_countForCycle('lycee')})'},
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Search Input with clear styling
-        Container(
-          height: 44,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceCard,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.cardBorder, width: 1.1),
-          ),
-          child: TextField(
-            controller: _searchController,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textPrimary,
-              fontFamily: fontFamily,
-            ),
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              prefixIcon: const Icon(
-                Icons.search_rounded,
-                color: AppColors.textSecondary,
-                size: 20,
-              ),
-              hintText: 'Rechercher une consigne (ex: argument, verbe, vrai...)',
-              hintStyle: TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary.withValues(alpha: 0.65),
-                fontFamily: fontFamily,
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear_rounded,
-                          size: 18, color: AppColors.textSecondary),
-                      onPressed: () => _searchController.clear(),
-                    )
-                  : null,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-
-        // School Level Filter Chips
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          child: Row(
-            children: cycles.map((c) {
-              final isSelected = _selectedCycle == c['key'];
-              return Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: InkWell(
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: cycles.map((c) {
+          final isSelected = _selectedCycle == c['key'];
+          return Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                setState(() {
+                  _selectedCycle = c['key']!;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.surfaceCard,
                   borderRadius: BorderRadius.circular(16),
-                  onTap: () {
-                    setState(() {
-                      _selectedCycle = c['key']!;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary.withValues(alpha: 0.15)
-                          : AppColors.background,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.cardBorder,
-                        width: 1.0,
-                      ),
-                    ),
-                    child: Text(
-                      c['label']!,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.w500,
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
-                        fontFamily: fontFamily,
-                      ),
-                    ),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.cardBorder,
+                    width: 1.0,
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
+                child: Text(
+                  c['label']!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.w600,
+                    color: isSelected
+                        ? Colors.white
+                        : AppColors.textPrimary,
+                    fontFamily: fontFamily,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 

@@ -174,8 +174,8 @@ class _InstructionDetailScreenState
 
   /// Question Hero Card:
   /// - Only Question Type badge (school level removed)
-  /// - Question card contains the question text AND the audio button inside it
-  /// - The title serves as a calm secondary category orientation
+  /// - Listen Button is firmly INSIDE the card (top-right corner)
+  /// - Question is the prominent center-piece
   Widget _buildQuestionHeroCard(
     InstructionItem item,
     String? fontFamily,
@@ -190,10 +190,15 @@ class _InstructionDetailScreenState
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: palette.border, width: 1.2),
+        border: Border.all(
+          color: isSpeakingOriginal ? typeColor : palette.border,
+          width: isSpeakingOriginal ? 1.6 : 1.2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: isSpeakingOriginal
+                ? typeColor.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -203,11 +208,12 @@ class _InstructionDetailScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Top Bar: Question Type Only + Secondary Title
+          // 1. Top Bar INSIDE the card: Question Type Badge + Listen Button
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Question Type Badge ONLY (Level removed as requested)
+              // Question Type Badge
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
@@ -225,131 +231,99 @@ class _InstructionDetailScreenState
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
 
-              // Title as subtle context orientation
-              Expanded(
-                child: Text(
-                  item.title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
-                    fontFamily: fontFamily,
+              // Listen Button INSIDE the card
+              InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => _speakText(item.originalFr),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isSpeakingOriginal
+                        ? typeColor
+                        : typeColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSpeakingOriginal
+                          ? typeColor
+                          : typeColor.withValues(alpha: 0.35),
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isSpeakingOriginal
+                            ? Icons.stop_rounded
+                            : Icons.volume_up_rounded,
+                        size: 15,
+                        color: isSpeakingOriginal ? Colors.white : typeColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isSpeakingOriginal ? 'Arrêter' : 'Écouter',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                          color: isSpeakingOriginal ? Colors.white : typeColor,
+                          fontFamily: fontFamily,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
 
-          // 2. THE QUESTION CARD: Contains the question AND the listen button inside it
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              color: isSpeakingOriginal
-                  ? typeColor.withValues(alpha: 0.08)
-                  : palette.background,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSpeakingOriginal
-                    ? typeColor
-                    : palette.border.withValues(alpha: 0.8),
-                width: isSpeakingOriginal ? 1.6 : 1.1,
+          // 2. Title Context
+          Text(
+            item.title,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+              fontFamily: fontFamily,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 3. Question Text (The star of the screen)
+          Text(
+            '« ${item.originalFr} »',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              height: 1.5,
+              color: palette.textPrimary,
+              fontFamily: fontFamily,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 4. Official Exam Badge inside the card
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.verified_rounded,
+                color: typeColor,
+                size: 16,
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top row INSIDE the question card: verified badge + listen button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.verified_rounded,
-                          color: typeColor,
-                          size: 17,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Énoncé officiel d\'examen',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.bold,
-                            color: typeColor,
-                            fontFamily: fontFamily,
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Listen Button INSIDE the question card
-                    InkWell(
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: () => _speakText(item.originalFr),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 11, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: isSpeakingOriginal
-                              ? typeColor
-                              : palette.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSpeakingOriginal
-                                ? typeColor
-                                : palette.border,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isSpeakingOriginal
-                                  ? Icons.stop_rounded
-                                  : Icons.volume_up_rounded,
-                              size: 15,
-                              color: isSpeakingOriginal
-                                  ? Colors.white
-                                  : typeColor,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              isSpeakingOriginal ? 'Arrêter' : 'Écouter',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.bold,
-                                color: isSpeakingOriginal
-                                    ? Colors.white
-                                    : typeColor,
-                                fontFamily: fontFamily,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+              const SizedBox(width: 5),
+              Text(
+                'Énoncé officiel d\'examen',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: typeColor,
+                  fontFamily: fontFamily,
                 ),
-                const SizedBox(height: 12),
-
-                // Question Text (The star of the card)
-                Text(
-                  '« ${item.originalFr} »',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    height: 1.5,
-                    color: palette.textPrimary,
-                    fontFamily: fontFamily,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
