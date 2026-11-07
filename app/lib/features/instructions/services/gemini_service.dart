@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 import '../../../core/ai/gemini_config.dart';
+import '../../../core/learner_profile/learner_profile_model.dart';
 import '../models/instruction_model.dart';
 
 /// Exception thrown when the Gemini API cannot be reached (offline).
@@ -63,17 +64,56 @@ class GeminiService {
     }
   }
 
+  /// Builds personalized pedagogical directives from the learner's diagnostic profile.
+  static String _buildProfileDirectives(LearnerProfile? profile) {
+    if (profile == null || !profile.isDiagnosticDone) {
+      return '';
+    }
+
+    final directives = <String>[];
+    if (profile.overwhelmedByText) {
+      directives.add(
+          '- L\'élève est vite submergé par les textes longs : limite impérativement l\'explication à 3 étapes courtes, directes et aérées.');
+    }
+    if (profile.poorWordDecoding) {
+      directives.add(
+          '- L\'élève a des difficultés de déchiffrage (dyslexie) : utilise des mots très simples et concrets, évite les termes grammaticaux ardus.');
+    }
+    if (profile.cognitiveFatigueHigh) {
+      directives.add(
+          '- L\'élève subit une fatigue cognitive rapide : chaque étape doit contenir une seule action claire, sans phrases imbriquées.');
+    }
+    if (profile.slowReadingSpeed) {
+      directives.add(
+          '- Vitesse de lecture lente : formules concises et mots courts.');
+    }
+    if (profile.mirrorLetterConfusion) {
+      directives.add(
+          '- L\'élève présente des confusions visuelles de lettres (ex: b/d) : privilégie des formulations explicites.');
+    }
+
+    if (directives.isEmpty) return '';
+
+    return '''
+Profil personnalisé de l'élève (besoins DYS et accessibilité cognitive) :
+${directives.join('\n')}
+''';
+  }
+
   /// Analyses an exam instruction and returns a fully populated [InstructionItem].
   ///
   /// [learnerLevelCode] must be one of `'primaire'`, `'moyen'`, `'secondaire'`.
+  /// [profile] contains the student's initial questionnaire diagnostic results.
   /// Throws [GeminiOfflineException] on network errors.
   /// Throws [GeminiParseException] when the AI response is not valid JSON.
   Future<InstructionItem> analyzeInstruction({
     required String questionText,
     required String learnerLevelCode,
+    LearnerProfile? profile,
   }) async {
     final cycle = _cycleFromLearnerCode(learnerLevelCode);
     final cycleLabel = _cycleLabelFr(cycle);
+    final profileDirectives = _buildProfileDirectives(profile);
 
     final levelLabel = switch (cycle) {
       'primaire' => 'Primaire',
@@ -82,8 +122,10 @@ class GeminiService {
     };
 
     final prompt = '''
-Tu es un assistant pédagogique francophone expert en didactique du français.
+Tu es un assistant pédagogique francophone expert en didactique du français et accompagnement des troubles DYS.
 Analyse cette consigne d'examen pour un élève de $cycleLabel.
+
+$profileDirectives
 
 Consigne : "$questionText"
 
@@ -107,7 +149,7 @@ Le JSON doit respecter exactement ce format :
 }
 
 Règles :
-- Fournis 3 à 5 étapes selon la complexité.
+- Fournis 3 à 5 étapes selon la complexité (maximum 3 si l'élève est facilement submergé par les textes longs).
 - Les étapes doivent être actionnables et progressives.
 - Pour le primaire : vocabulaire très simple, phrases courtes, exemples concrets.
 - Pour le collège : langage clair, termes scolaires de base.

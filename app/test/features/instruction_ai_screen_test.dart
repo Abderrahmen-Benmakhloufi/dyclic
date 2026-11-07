@@ -181,4 +181,30 @@ void main() {
     final tf = tester.widget<TextField>(find.byType(TextField));
     expect(tf.controller?.text, isEmpty);
   });
+
+  testWidgets('Recent history section displays and can be cleared', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    // Seed history into SharedPreferences
+    await prefs.setStringList('ai_instructions_history', [
+      '{"id":"HIST-1","title":"Historique 1","cycle":"college","level":"Collège","domain":"Compréhension","questionType":"comprehension","originalFr":"Question passée","steps":[]}'
+    ]);
+
+    await tester.pumpWidget(createTestWidget());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Consignes récentes'), findsOneWidget);
+    expect(find.text('Historique 1'), findsOneWidget);
+
+    // Tap "Effacer l'historique"
+    await tester.tap(find.text("Effacer l'historique"));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Consignes récentes'), findsNothing);
+  });
 }

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/learner_profile/learner_profile_notifier.dart';
 import '../../core/reading_settings/reading_settings_model.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/theme/app_colors.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import 'instruction_detail_screen.dart';
 import 'instructions_screen.dart';
+import 'models/instruction_model.dart';
 import 'services/gemini_service.dart';
+import 'services/instruction_cache_service.dart';
+import 'services/instruction_matching_service.dart';
 
 /// Quick example instructions shown as chip buttons below the text field.
 const _kExamples = [
@@ -18,7 +22,10 @@ const _kExamples = [
 ];
 
 /// Main AI-powered "Expliquer une consigne" screen.
-/// The 17-instruction catalog is accessible via a Banner Card.
+/// Includes:
+/// - Instant local matching against the 17 catalog instructions
+/// - Local cache & history for instant re-access without internet or API calls
+/// - Learner profile integration to tailor pedagogical guidance to DYS needs
 class InstructionAiScreen extends ConsumerStatefulWidget {
   const InstructionAiScreen({super.key});
 
@@ -31,9 +38,20 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
+  InstructionCacheService? _cacheService;
+  List<InstructionItem> _history = [];
+
   bool _isLoading = false;
   bool _hasError = false;
   String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    final prefs = ref.read(sharedPreferencesProvider);
+    _cacheService = InstructionCacheService(prefs);
+    _history = _cacheService!.getHistory();
+  }
 
   @override
   void dispose() {
@@ -45,6 +63,17 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   String _learnerCode(ReadingSettings s) => s.learnerLevel.code;
+
+  String _cycleString(ReadingSettings s) {
+    switch (s.learnerLevel) {
+      case LearnerLevel.primaire:
+        return 'primaire';
+      case LearnerLevel.secondaire:
+        return 'lycee';
+      case LearnerLevel.moyen:
+        return 'college';
+    }
+  }
 
   String _cycleLabel(ReadingSettings s) {
     switch (s.learnerLevel) {
@@ -62,8 +91,95 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
     if (text.isEmpty) return;
 
     final settings = ref.read(readingSettingsProvider);
+    final profile = ref.read(learnerProfileProvider);
     final learnerCode = _learnerCode(settings);
+    final cycle = _cycleString(settings);
 
+    // ── 1. Option 4: Instant match with official 17 catalog instructions ───
+    final localMatch = await InstructionMatchingService.findBestMatch(
+      query: text,
+      cycle: cycle,
+    );
+
+    if (localMatch != null && (localMatch.isExact || localMatch.confidence >= 0.70)) {
+      if (_cacheService != null) {
+        await _cacheService!.saveInstruction(localMatch.item);
+      }
+      if (!mounted) return;
+      setState(() {
+        if (_cacheService != null) {
+          _history = _cacheService!.getHistory();
+        }
+        _isLoading = false;
+        _hasError = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.bolt_rounded, color: Colors.amber, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  localMatch.isExact
+                      ? 'Consigne officielle trouvée instantanément ⚡'
+                      : 'Correspondance trouvée dans le catalogue officiel ⚡',
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => InstructionDetailScreen(item: localMatch.item),
+        ),
+      );
+      return;
+    }
+
+    // ── 2. Option 3: Check cached history (instant result without API) ───
+    if (_cacheService != null) {
+      final cached = _cacheService!.findInCache(text, cycle);
+      if (cached != null) {
+        await _cacheService!.saveInstruction(cached); // bump to top
+        if (!mounted) return;
+        setState(() {
+          _history = _cacheService!.getHistory();
+          _isLoading = false;
+          _hasError = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.history_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text('Récupéré depuis vos consignes récentes ⚡'),
+                ),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => InstructionDetailScreen(item: cached),
+          ),
+        );
+        return;
+      }
+    }
+
+    // ── 3. Call Gemini AI with student diagnostic profile ────────────────
     setState(() {
       _isLoading = true;
       _hasError = false;
@@ -75,10 +191,20 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
       final item = await service.analyzeInstruction(
         questionText: text,
         learnerLevelCode: learnerCode,
+        profile: profile,
       );
 
+      if (_cacheService != null) {
+        await _cacheService!.saveInstruction(item);
+      }
+
       if (!mounted) return;
-      setState(() => _isLoading = false);
+      setState(() {
+        if (_cacheService != null) {
+          _history = _cacheService!.getHistory();
+        }
+        _isLoading = false;
+      });
 
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -215,6 +341,29 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
               isEnabled: _controller.text.trim().isNotEmpty && !_isLoading,
               onPressed: _submit,
             ),
+
+            // ── 7. Option 3: Recent History ──────────────────────────────
+            if (_history.isNotEmpty) ...[
+              const SizedBox(height: 28),
+              _HistorySection(
+                history: _history,
+                onSelect: (item) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => InstructionDetailScreen(item: item),
+                    ),
+                  );
+                },
+                onClear: () async {
+                  if (_cacheService != null) {
+                    await _cacheService!.clearHistory();
+                  }
+                  setState(() {
+                    _history = [];
+                  });
+                },
+              ),
+            ],
           ],
         ),
       ),
@@ -477,7 +626,6 @@ class _ExamplesRow extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: _kExamples.map((ex) {
-              // Show only first ~30 chars in the chip
               final short = ex.length > 30 ? '${ex.substring(0, 30)}…' : ex;
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
@@ -664,6 +812,133 @@ class _SubmitButton extends StatelessWidget {
                 ),
               ),
       ),
+    );
+  }
+}
+
+/// Option 3: Recent history of analyzed instructions.
+class _HistorySection extends StatelessWidget {
+  const _HistorySection({
+    required this.history,
+    required this.onSelect,
+    required this.onClear,
+  });
+
+  final List<InstructionItem> history;
+  final ValueChanged<InstructionItem> onSelect;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.history_rounded, size: 18, color: AppColors.textPrimary),
+                SizedBox(width: 6),
+                Text(
+                  'Consignes récentes',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            TextButton(
+              onPressed: onClear,
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              child: const Text(
+                'Effacer l\'historique',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: history.length > 5 ? 5 : history.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final item = history[index];
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onSelect(item),
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceCard,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.cardBorder, width: 1.0),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: item.questionTypeLightColor,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          item.questionTypeEmoji,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.title.isNotEmpty ? item.title : item.originalFr,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              item.originalFr,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: AppColors.textSecondary.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }
