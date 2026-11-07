@@ -10,7 +10,7 @@ import '../decoding/decoding_screen.dart';
 import '../tts/tts_screen.dart';
 import '../writing/writing_screen.dart';
 import '../simplify/simplify_screen.dart';
-import '../instructions/instructions_screen.dart';
+import '../instructions/instruction_ai_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -170,7 +170,7 @@ class HomeScreen extends ConsumerWidget {
               title: 'Expliquer la consigne',
               description: 'Comprendre ce qu’on me demande de faire.',
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const InstructionsScreen()),
+                MaterialPageRoute(builder: (_) => const InstructionAiScreen()),
               ),
             ),
             const SizedBox(height: 18),
