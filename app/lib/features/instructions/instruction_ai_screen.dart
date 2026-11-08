@@ -11,7 +11,6 @@ import 'instructions_screen.dart';
 import 'models/instruction_model.dart';
 import 'services/gemini_service.dart';
 import 'services/instruction_cache_service.dart';
-import 'services/instruction_matching_service.dart';
 
 /// Quick example instructions shown as chip buttons below the text field.
 const _kExamples = [
@@ -95,54 +94,7 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
     final learnerCode = _learnerCode(settings);
     final cycle = _cycleString(settings);
 
-    // ── 1. Option 4: Instant match with official 17 catalog instructions ───
-    final localMatch = await InstructionMatchingService.findBestMatch(
-      query: text,
-      cycle: cycle,
-    );
-
-    if (localMatch != null && (localMatch.isExact || localMatch.confidence >= 0.70)) {
-      if (_cacheService != null) {
-        await _cacheService!.saveInstruction(localMatch.item);
-      }
-      if (!mounted) return;
-      setState(() {
-        if (_cacheService != null) {
-          _history = _cacheService!.getHistory();
-        }
-        _isLoading = false;
-        _hasError = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.bolt_rounded, color: Colors.amber, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  localMatch.isExact
-                      ? 'Consigne officielle trouvée instantanément ⚡'
-                      : 'Correspondance trouvée dans le catalogue officiel ⚡',
-                ),
-              ),
-            ],
-          ),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => InstructionDetailScreen(item: localMatch.item),
-        ),
-      );
-      return;
-    }
-
-    // ── 2. Option 3: Check cached history (instant result without API) ───
+    // ── Check cached history (instant result if exact same query previously analyzed) ──
     if (_cacheService != null) {
       final cached = _cacheService!.findInCache(text, cycle);
       if (cached != null) {
@@ -179,7 +131,7 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
       }
     }
 
-    // ── 3. Call Gemini AI with student diagnostic profile ────────────────
+    // ── Call Gemini AI with student diagnostic profile ────────────────
     setState(() {
       _isLoading = true;
       _hasError = false;
@@ -286,6 +238,29 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
           ),
         ),
         actions: [
+          TextButton.icon(
+            onPressed: _openCatalog,
+            icon: const Text('📚', style: TextStyle(fontSize: 15)),
+            label: const Text(
+              '17 consignes',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF0284C7),
+              ),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: const Color(0xFF0284C7).withValues(alpha: 0.1),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: const Color(0xFF0284C7).withValues(alpha: 0.25),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.tune_rounded),
             tooltip: 'Paramètres de lecture',
@@ -300,11 +275,7 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── 1. Banner Card: catalog ─────────────────────────────────
-            _CatalogBannerCard(onTap: _openCatalog),
-            const SizedBox(height: 20),
-
-            // ── 2. Cycle chip (read-only display, opens settings) ───────
+            // ── 1. Cycle chip (read-only display, opens settings) ───────
             _CyclePill(
               label: _cycleLabel(settings),
               onTap: () => ReadingSettingsSheet.show(context),
@@ -374,79 +345,6 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
 // ════════════════════════════════════════════════════════════════════════════
 // Sub-widgets
 // ════════════════════════════════════════════════════════════════════════════
-
-/// Banner card linking to the 17-instruction catalog.
-class _CatalogBannerCard extends StatelessWidget {
-  const _CatalogBannerCard({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0284C7).withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFF0284C7).withValues(alpha: 0.25),
-              width: 1.2,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0284C7).withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(
-                  child: Text('📚', style: TextStyle(fontSize: 22)),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '17 consignes types d\'examen',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: Color(0xFF0284C7),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Consulter des exemples officiels prêts à l\'emploi',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: Color(0xFF0284C7),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// Read-only chip showing the learner's current cycle, tappable to change it.
 class _CyclePill extends StatelessWidget {

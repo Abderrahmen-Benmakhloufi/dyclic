@@ -38,7 +38,7 @@ void main() {
     expect(find.text('Expliquer une consigne 💡'), findsOneWidget);
   });
 
-  testWidgets('InstructionAiScreen shows catalog banner card', (tester) async {
+  testWidgets('InstructionAiScreen shows 17 consignes catalog button in AppBar', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -49,7 +49,7 @@ void main() {
     await tester.pumpWidget(createTestWidget());
     await tester.pumpAndSettle();
 
-    expect(find.text("17 consignes types d'examen"), findsOneWidget);
+    expect(find.text('17 consignes'), findsOneWidget);
   });
 
   testWidgets('InstructionAiScreen shows cycle pill', (tester) async {
