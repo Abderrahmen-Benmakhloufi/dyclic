@@ -198,13 +198,38 @@ void main() {
     await tester.pumpWidget(createTestWidget());
     await tester.pumpAndSettle();
 
-    expect(find.text('Consignes récentes'), findsOneWidget);
+    expect(find.text('Récents (1)'), findsOneWidget);
     expect(find.text('Historique 1'), findsOneWidget);
 
-    // Tap "Effacer l'historique"
-    await tester.tap(find.text("Effacer l'historique"));
+    // Tap "Effacer"
+    await tester.tap(find.text("Effacer"));
     await tester.pumpAndSettle();
 
-    expect(find.text('Consignes récentes'), findsNothing);
+    expect(find.text('Historique 1'), findsNothing);
+  });
+
+  testWidgets('Favorites tab displays favorited instructions', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    // Seed favorites into SharedPreferences
+    await prefs.setStringList('ai_instructions_favorites', [
+      '{"id":"FAV-1","title":"Ma Consigne Favorite","cycle":"college","level":"Collège","domain":"Compréhension","questionType":"comprehension","originalFr":"Question favorite","steps":[]}'
+    ]);
+
+    await tester.pumpWidget(createTestWidget());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Favoris (1)'), findsOneWidget);
+
+    // Switch to favorites tab
+    await tester.tap(find.text('Favoris (1)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ma Consigne Favorite'), findsOneWidget);
   });
 }

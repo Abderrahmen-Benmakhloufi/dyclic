@@ -61,4 +61,22 @@ void main() {
     await cacheService.clearHistory();
     expect(cacheService.getHistory(), isEmpty);
   });
+
+  test('InstructionCacheService toggles and retrieves favorites', () async {
+    expect(cacheService.getFavorites(), isEmpty);
+    expect(cacheService.isFavorite('TEST-01'), isFalse);
+
+    // Add to favorites
+    final added = await cacheService.toggleFavorite(sampleItem);
+    expect(added, isTrue);
+    expect(cacheService.isFavorite('TEST-01'), isTrue);
+    expect(cacheService.getFavorites().length, equals(1));
+    expect(cacheService.getFavorites().first.id, equals('TEST-01'));
+
+    // Remove from favorites
+    final removed = await cacheService.toggleFavorite(sampleItem);
+    expect(removed, isFalse);
+    expect(cacheService.isFavorite('TEST-01'), isFalse);
+    expect(cacheService.getFavorites(), isEmpty);
+  });
 }

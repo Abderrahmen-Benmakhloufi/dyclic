@@ -6,6 +6,7 @@ import '../../core/theme/reading_palette.dart';
 import '../../core/tts/tts_service.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import 'models/instruction_model.dart';
+import 'services/instruction_cache_service.dart';
 
 /// Hallmark-Crafted Instruction Detail Screen:
 /// - Question is the prominent HERO of the screen (larger than title)
@@ -30,12 +31,49 @@ class _InstructionDetailScreenState
   late final TtsService _ttsService;
   bool _isPlaying = false;
   String? _currentlySpeakingText;
+  bool _isFavorite = false;
 
   @override
   void initState() {
     super.initState();
     _ttsService = ref.read(ttsServiceProvider);
     _ttsService.isPlayingNotifier.addListener(_onTtsStateChanged);
+
+    final prefs = ref.read(sharedPreferencesProvider);
+    final cacheService = InstructionCacheService(prefs);
+    _isFavorite =
+        cacheService.isFavorite(widget.item.id, widget.item.originalFr);
+  }
+
+  Future<void> _toggleFavorite() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final cacheService = InstructionCacheService(prefs);
+    final newState = await cacheService.toggleFavorite(widget.item);
+    if (!mounted) return;
+    setState(() {
+      _isFavorite = newState;
+    });
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              newState ? Icons.star_rounded : Icons.star_border_rounded,
+              color: newState ? Colors.amber : Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              newState ? 'Ajouté aux favoris ⭐' : 'Retiré des favoris',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _onTtsStateChanged() {
@@ -116,6 +154,15 @@ class _InstructionDetailScreenState
           ),
         ),
         actions: [
+          IconButton(
+            icon: Icon(
+              _isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
+              color: _isFavorite ? Colors.amber : palette.textPrimary,
+              size: 26,
+            ),
+            tooltip: _isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
+            onPressed: _toggleFavorite,
+          ),
           IconButton(
             icon: Icon(
               Icons.tune_rounded,

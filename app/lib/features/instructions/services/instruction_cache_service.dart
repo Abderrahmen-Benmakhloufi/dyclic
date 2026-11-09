@@ -96,4 +96,55 @@ class InstructionCacheService {
   Future<void> clearHistory() async {
     await _prefs.remove(_kHistoryKey);
   }
+
+  // ── Favorites Management ──────────────────────────────────────────────────
+
+  static const String _kFavoritesKey = 'ai_instructions_favorites';
+
+  /// Get all favorited instructions (newest first)
+  List<InstructionItem> getFavorites() {
+    final rawList = _prefs.getStringList(_kFavoritesKey) ?? [];
+    final items = <InstructionItem>[];
+    for (final raw in rawList) {
+      try {
+        final Map<String, dynamic> json =
+            jsonDecode(raw) as Map<String, dynamic>;
+        items.add(InstructionItem.fromJson(json));
+      } catch (_) {
+        // Skip corrupted entries
+      }
+    }
+    return items;
+  }
+
+  /// Check whether an item is in favorites by ID or normalized text
+  bool isFavorite(String id, [String? text]) {
+    final favorites = getFavorites();
+    final norm = text != null ? normalizeKey(text) : null;
+    return favorites.any((f) =>
+        f.id == id || (norm != null && normalizeKey(f.originalFr) == norm));
+  }
+
+  /// Toggle favorite status, returns new state (true if favorited, false if removed)
+  Future<bool> toggleFavorite(InstructionItem item) async {
+    final favorites = getFavorites();
+    final itemNorm = normalizeKey(item.originalFr);
+
+    final existingIndex = favorites.indexWhere((f) =>
+        f.id == item.id ||
+        (itemNorm.isNotEmpty && normalizeKey(f.originalFr) == itemNorm));
+
+    bool isNowFavorite;
+    if (existingIndex >= 0) {
+      favorites.removeAt(existingIndex);
+      isNowFavorite = false;
+    } else {
+      favorites.insert(0, item);
+      isNowFavorite = true;
+    }
+
+    final rawList = favorites.map((e) => jsonEncode(e.toJson())).toList();
+    await _prefs.setStringList(_kFavoritesKey, rawList);
+    return isNowFavorite;
+  }
 }

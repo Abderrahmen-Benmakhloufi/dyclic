@@ -40,6 +40,8 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
 
   InstructionCacheService? _cacheService;
   List<InstructionItem> _history = [];
+  List<InstructionItem> _favorites = [];
+  bool _showFavoritesTab = false;
 
   bool _isLoading = false;
   bool _hasError = false;
@@ -51,6 +53,22 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
     final prefs = ref.read(sharedPreferencesProvider);
     _cacheService = InstructionCacheService(prefs);
     _history = _cacheService!.getHistory();
+    _favorites = _cacheService!.getFavorites();
+  }
+
+  Future<void> _openDetail(InstructionItem item) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => InstructionDetailScreen(item: item),
+      ),
+    );
+    if (!mounted) return;
+    if (_cacheService != null) {
+      setState(() {
+        _history = _cacheService!.getHistory();
+        _favorites = _cacheService!.getFavorites();
+      });
+    }
   }
 
   @override
@@ -134,11 +152,7 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
         ),
       );
 
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => InstructionDetailScreen(item: localMatch.item),
-        ),
-      );
+      await _openDetail(localMatch.item);
       return;
     }
 
@@ -170,11 +184,7 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
           ),
         );
 
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => InstructionDetailScreen(item: cached),
-          ),
-        );
+        await _openDetail(cached);
         return;
       }
     }
@@ -206,11 +216,7 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
         _isLoading = false;
       });
 
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => InstructionDetailScreen(item: item),
-        ),
-      );
+      await _openDetail(item);
     } on GeminiOfflineException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -342,19 +348,20 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
               onPressed: _submit,
             ),
 
-            // ── 7. Option 3: Recent History ──────────────────────────────
-            if (_history.isNotEmpty) ...[
+            // ── 7. Option 3: Recent History & Favorites ─────────────────
+            if (_history.isNotEmpty || _favorites.isNotEmpty) ...[
               const SizedBox(height: 28),
-              _HistorySection(
+              _HistoryAndFavoritesSection(
                 history: _history,
-                onSelect: (item) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => InstructionDetailScreen(item: item),
-                    ),
-                  );
+                favorites: _favorites,
+                showFavoritesTab: _showFavoritesTab,
+                onTabChanged: (isFav) {
+                  setState(() {
+                    _showFavoritesTab = isFav;
+                  });
                 },
-                onClear: () async {
+                onSelect: _openDetail,
+                onClearHistory: () async {
                   if (_cacheService != null) {
                     await _cacheService!.clearHistory();
                   }
@@ -816,128 +823,251 @@ class _SubmitButton extends StatelessWidget {
   }
 }
 
-/// Option 3: Recent history of analyzed instructions.
-class _HistorySection extends StatelessWidget {
-  const _HistorySection({
+/// Option 3: Recent history & Favorites of analyzed instructions.
+class _HistoryAndFavoritesSection extends StatelessWidget {
+  const _HistoryAndFavoritesSection({
     required this.history,
+    required this.favorites,
+    required this.showFavoritesTab,
+    required this.onTabChanged,
     required this.onSelect,
-    required this.onClear,
+    required this.onClearHistory,
   });
 
   final List<InstructionItem> history;
+  final List<InstructionItem> favorites;
+  final bool showFavoritesTab;
+  final ValueChanged<bool> onTabChanged;
   final ValueChanged<InstructionItem> onSelect;
-  final VoidCallback onClear;
+  final VoidCallback onClearHistory;
 
   @override
   Widget build(BuildContext context) {
+    final activeList = showFavoritesTab ? favorites : history;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Tabs Header: Récents vs Favoris
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Row(
-              children: [
-                Icon(Icons.history_rounded, size: 18, color: AppColors.textPrimary),
-                SizedBox(width: 6),
-                Text(
-                  'Consignes récentes',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+            // Recents Tab Chip
+            GestureDetector(
+              onTap: () => onTabChanged(false),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: !showFavoritesTab
+                      ? AppColors.primary
+                      : AppColors.surfaceCard,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: !showFavoritesTab
+                        ? AppColors.primary
+                        : AppColors.cardBorder,
                   ),
                 ),
-              ],
-            ),
-            TextButton(
-              onPressed: onClear,
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.history_rounded,
+                      size: 15,
+                      color: !showFavoritesTab
+                          ? Colors.white
+                          : AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Récents (${history.length})',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: !showFavoritesTab
+                            ? Colors.white
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: const Text(
-                'Effacer l\'historique',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(width: 8),
+
+            // Favorites Tab Chip
+            GestureDetector(
+              onTap: () => onTabChanged(true),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: showFavoritesTab
+                      ? Colors.amber.shade700
+                      : AppColors.surfaceCard,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: showFavoritesTab
+                        ? Colors.amber.shade700
+                        : AppColors.cardBorder,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.star_rounded,
+                      size: 15,
+                      color: showFavoritesTab
+                          ? Colors.white
+                          : Colors.amber.shade700,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Favoris (${favorites.length})',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: showFavoritesTab
+                            ? Colors.white
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
+
+            const Spacer(),
+
+            // Clear history button (only when on recents tab)
+            if (!showFavoritesTab && history.isNotEmpty)
+              TextButton(
+                onPressed: onClearHistory,
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                ),
+                child: const Text(
+                  'Effacer',
+                  style:
+                      TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ),
           ],
         ),
-        const SizedBox(height: 8),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: history.length > 5 ? 5 : history.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
-          itemBuilder: (context, index) {
-            final item = history[index];
-            return Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => onSelect(item),
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceCard,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.cardBorder, width: 1.0),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: item.questionTypeLightColor,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          item.questionTypeEmoji,
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.title.isNotEmpty ? item.title : item.originalFr,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              item.originalFr,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: AppColors.textSecondary.withValues(alpha: 0.8),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ],
-                  ),
+
+        const SizedBox(height: 12),
+
+        // Content
+        if (activeList.isEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceCard,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.cardBorder, width: 1.0),
+            ),
+            child: Center(
+              child: Text(
+                showFavoritesTab
+                    ? 'Aucune consigne dans les favoris pour le moment.\nTouche l\'étoile ⭐ sur une consigne pour la garder ici !'
+                    : 'Aucune consigne récente.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: AppColors.textSecondary.withValues(alpha: 0.8),
+                  height: 1.4,
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: activeList.length > 5 ? 5 : activeList.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final item = activeList[index];
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => onSelect(item),
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceCard,
+                      borderRadius: BorderRadius.circular(14),
+                      border:
+                          Border.all(color: AppColors.cardBorder, width: 1.0),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: item.questionTypeLightColor,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            item.questionTypeEmoji,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.title.isNotEmpty
+                                    ? item.title
+                                    : item.originalFr,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                item.originalFr,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: AppColors.textSecondary
+                                      .withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (showFavoritesTab)
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 18,
+                            color: Colors.amber,
+                          )
+                        else
+                          const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
       ],
     );
   }
