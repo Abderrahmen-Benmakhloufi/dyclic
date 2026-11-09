@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/reading_settings/reading_settings_model.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
+import '../../core/services/ocr_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/reading_palette.dart';
 import '../../core/tts/tts_service.dart';
@@ -603,6 +604,51 @@ class _ReadingSupportScreenState extends ConsumerState<ReadingSupportScreen> {
                           },
                           icon: const Icon(Icons.content_paste_rounded, size: 16),
                           label: const Text('Coller'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: palette.primary,
+                            side: BorderSide(color: palette.border),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Scanner (OCR) Button
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            final text = await OcrService.instance
+                                .scanTextWithPicker(context);
+                            if (text != null && text.trim().isNotEmpty) {
+                              final clamped = text.length > 10000
+                                  ? text.substring(0, 10000)
+                                  : text;
+                              _applySampleText(clamped);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.check_circle_rounded,
+                                            color: Colors.white, size: 18),
+                                        SizedBox(width: 8),
+                                        Text('Page scannée avec succès ! 📷'),
+                                      ],
+                                    ),
+                                    duration: Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.camera_alt_rounded, size: 16),
+                          label: const Text('Scanner'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: palette.primary,
                             side: BorderSide(color: palette.border),

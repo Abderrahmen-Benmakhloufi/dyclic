@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/learner_profile/learner_profile_notifier.dart';
 import '../../core/reading_settings/reading_settings_model.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
+import '../../core/services/ocr_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import 'instruction_detail_screen.dart';
@@ -241,6 +242,30 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
     }
   }
 
+  Future<void> _scanText() async {
+    final scanned = await OcrService.instance.scanTextWithPicker(context);
+    if (scanned != null && scanned.trim().isNotEmpty) {
+      setState(() {
+        _controller.text = scanned.trim();
+        _hasError = false;
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Text('Texte extrait avec succès ! 📷'),
+            ],
+          ),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   void _openCatalog() {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const InstructionsScreen()),
@@ -323,6 +348,7 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
               focusNode: _focusNode,
               onChanged: (_) => setState(() {}),
               onClear: _clearInput,
+              onScan: _scanText,
               theme: theme,
             ),
             const SizedBox(height: 12),
@@ -511,13 +537,14 @@ class _CyclePill extends StatelessWidget {
   }
 }
 
-/// Multi-line text field with clear button.
+/// Multi-line text field with clear & OCR buttons.
 class _InputSection extends StatelessWidget {
   const _InputSection({
     required this.controller,
     required this.focusNode,
     required this.onChanged,
     required this.onClear,
+    required this.onScan,
     required this.theme,
   });
 
@@ -525,6 +552,7 @@ class _InputSection extends StatelessWidget {
   final FocusNode focusNode;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
+  final VoidCallback onScan;
   final ThemeData theme;
 
   @override
@@ -545,7 +573,39 @@ class _InputSection extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            if (hasText)
+            // OCR Scan button
+            GestureDetector(
+              onTap: onScan,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.camera_alt_rounded,
+                        size: 13, color: AppColors.primary),
+                    SizedBox(width: 4),
+                    Text(
+                      'Scanner',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (hasText) ...[
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: onClear,
                 child: Container(
@@ -571,6 +631,7 @@ class _InputSection extends StatelessWidget {
                   ),
                 ),
               ),
+            ],
           ],
         ),
         const SizedBox(height: 8),
