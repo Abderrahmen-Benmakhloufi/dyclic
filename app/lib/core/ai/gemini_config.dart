@@ -16,6 +16,13 @@ class GeminiConfig {
     return key;
   }
 
-  /// Model to use — gemini-2.0-flash for best speed/quality balance.
-  static const String model = 'gemini-2.0-flash';
+  /// Primary model to use — gemini-3.5-flash for fastest speed and high availability.
+  static const String model = 'gemini-3.5-flash';
+
+  /// Fallback models in case the primary experiences temporary rate-limits or spikes.
+  static const List<String> fallbackModels = [
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite',
+  ];
 }

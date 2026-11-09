@@ -24,19 +24,11 @@ class GeminiParseException implements Exception {
 
 /// Encapsulates all Gemini API communication for the instruction explainer.
 class GeminiService {
-  GeminiService() {
-    _model = GenerativeModel(
-      model: GeminiConfig.model,
-      apiKey: GeminiConfig.apiKey,
-      generationConfig: GenerationConfig(
-        responseMimeType: 'application/json',
-        temperature: 0.3,
-        maxOutputTokens: 1024,
-      ),
-    );
-  }
-
-  late final GenerativeModel _model;
+  final GenerationConfig _generationConfig = GenerationConfig(
+    responseMimeType: 'application/json',
+    temperature: 0.3,
+    maxOutputTokens: 1024,
+  );
 
   /// Maps [LearnerLevel] code to cycle values expected by [InstructionItem].
   static String _cycleFromLearnerCode(String learnerCode) {
@@ -158,30 +150,48 @@ Règles :
 - Réponds UNIQUEMENT avec le JSON, rien d'autre.
 ''';
 
-    try {
-      final response = await _model.generateContent([Content.text(prompt)]);
-      final raw = response.text ?? '';
-      if (raw.isEmpty) throw const GeminiParseException('Réponse vide.');
+    GenerativeAIException? lastAiException;
+    FormatException? lastFormatException;
+    String? lastErrorMsg;
 
-      // Strip potential markdown code fences
-      final cleaned = raw
-          .replaceAll(RegExp(r'^```json\s*', multiLine: true), '')
-          .replaceAll(RegExp(r'^```\s*', multiLine: true), '')
-          .trim();
+    for (final modelName in GeminiConfig.fallbackModels) {
+      try {
+        final model = GenerativeModel(
+          model: modelName,
+          apiKey: GeminiConfig.apiKey,
+          generationConfig: _generationConfig,
+        );
 
-      final Map<String, dynamic> json =
-          jsonDecode(cleaned) as Map<String, dynamic>;
+        final response = await model.generateContent([Content.text(prompt)]);
+        final raw = response.text ?? '';
+        if (raw.isEmpty) continue;
 
-      return InstructionItem.fromJson(json);
-    } on GenerativeAIException catch (e) {
-      // Network / auth errors from the SDK
-      throw GeminiOfflineException(e.message);
-    } on FormatException catch (e) {
-      throw GeminiParseException('JSON invalide : ${e.message}');
-    } catch (e) {
-      if (e is GeminiOfflineException || e is GeminiParseException) rethrow;
-      // Treat unknown errors (SocketException, etc.) as offline
-      throw GeminiOfflineException(e.toString());
+        // Strip potential markdown code fences
+        final cleaned = raw
+            .replaceAll(RegExp(r'^```json\s*', multiLine: true), '')
+            .replaceAll(RegExp(r'^```\s*', multiLine: true), '')
+            .trim();
+
+        final Map<String, dynamic> json =
+            jsonDecode(cleaned) as Map<String, dynamic>;
+
+        return InstructionItem.fromJson(json);
+      } on GenerativeAIException catch (e) {
+        lastAiException = e;
+      } on FormatException catch (e) {
+        lastFormatException = e;
+      } catch (e) {
+        lastErrorMsg = e.toString();
+      }
     }
+
+    if (lastFormatException != null) {
+      throw GeminiParseException('JSON invalide : ${lastFormatException.message}');
+    }
+    if (lastAiException != null) {
+      throw GeminiOfflineException(lastAiException.message);
+    }
+    throw GeminiOfflineException(
+        lastErrorMsg ?? 'Impossible d\'analyser la consigne avec l\'IA.');
   }
 }
