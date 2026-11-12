@@ -53,12 +53,12 @@ void main() {
     await tester.pumpWidget(createTestWidget());
     await tester.pumpAndSettle();
 
-    expect(find.text('🎯 Sujet demandé (optionnel)'), findsNothing);
+    expect(find.text('Sujet demandé (optionnel)'), findsNothing);
 
     await tester.tap(find.text('Ajouter le sujet du professeur (optionnel)'));
     await tester.pumpAndSettle();
 
-    expect(find.text('🎯 Sujet demandé (optionnel)'), findsOneWidget);
+    expect(find.text('Sujet demandé (optionnel)'), findsOneWidget);
   });
 
   testWidgets('Submit button is disabled when empty and enables on input',
@@ -99,10 +99,12 @@ void main() {
     await tester.pumpWidget(createTestWidget());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('🐴 Exemple Primaire'));
+    expect(find.text('Exemples pour tester (10)'), findsOneWidget);
+
+    await tester.tap(find.text('Sortie en forêt'));
     await tester.pumpAndSettle();
 
-    expect(find.text('🎯 Sujet demandé (optionnel)'), findsOneWidget);
+    expect(find.text('Sujet demandé (optionnel)'), findsOneWidget);
     final activeBtn = tester.widget<ElevatedButton>(
       find.widgetWithText(ElevatedButton, 'Analyser mon texte ✨'),
     );

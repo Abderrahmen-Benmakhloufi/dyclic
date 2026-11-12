@@ -376,7 +376,13 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
 
             // ── 7. Option 3: Recent History & Favorites ─────────────────
             if (_history.isNotEmpty || _favorites.isNotEmpty) ...[
-              const SizedBox(height: 28),
+              const SizedBox(height: 22),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.cardBorder,
+              ),
+              const SizedBox(height: 20),
               _HistoryAndFavoritesSection(
                 history: _history,
                 favorites: _favorites,

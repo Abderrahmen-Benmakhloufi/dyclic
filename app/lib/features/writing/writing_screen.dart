@@ -14,25 +14,222 @@ import 'services/writing_cache_service.dart';
 import 'services/writing_gemini_service.dart';
 import 'writing_feedback_screen.dart';
 
-/// Quick sample student essays containing typical DYS mistakes (inversions, phonetic, rules, accords).
-const _kSampleTexts = [
+/// Quick sample student essays containing typical DYS mistakes (10 per cycle: Primaire, Collège, Lycée).
+const List<Map<String, String>> _kSampleTexts = [
+  // ── PRIMAIRE (10 exemples) ──────────────────────────────────────────────
   {
-    'label': '🐴 Exemple Primaire',
+    'cycle': 'primaire',
+    'label': 'Visite à la ferme',
     'subject': 'Décris une visite à la ferme.',
     'text':
         'Hier, je suis aler à la ferme avec mon père. J ai vu un gran chavel blanc qui manger de l herbe. Il y avais aussi un bato sur la rivière.',
   },
   {
-    'label': '🌿 Exemple Collège',
+    'cycle': 'primaire',
+    'label': 'Mon chat',
+    'subject': 'Décris ton animal préféré.',
+    'text':
+        'Mon chat s appelle Minou. Il a des poils doux et une longue qeu. Il aime boire du lai et dormire sur le canapé du salon.',
+  },
+  {
+    'cycle': 'primaire',
+    'label': 'La récréation',
+    'subject': 'Raconte ce que tu fais pendant la récréation.',
+    'text':
+        'Quand la cloche sone, je sors vite dans la cour. Mes amis et moi jouons au balon. Parfois, nous faisons la course et nous rigolon beaucoup.',
+  },
+  {
+    'cycle': 'primaire',
+    'label': 'Mon cartable',
+    'subject': 'Décris ce qu’il y a dans ton cartable.',
+    'text':
+        'Dans mon cartabel bleu, je range mes cahiers et ma trousse. J ai trois crayions de couleur, une gome blanche et un livre de fransais.',
+  },
+  {
+    'cycle': 'primaire',
+    'label': 'L’anniversaire',
+    'subject': 'Raconte la fête d’anniversaire de ton ami.',
+    'text':
+        'Samedi, nous avons fêté l anivairsaire de Sami. Sa maman a préparé un gro gato au chocola avec huit bougies dessus.',
+  },
+  {
+    'cycle': 'primaire',
+    'label': 'À la plage',
+    'subject': 'Raconte une journée à la plage.',
+    'text':
+        'En été, je vais à la mer avec ma famile. Je construit un chato de sable avec mon petit frère. L eau est fraiche et bleue.',
+  },
+  {
+    'cycle': 'primaire',
+    'label': 'L’arbre du jardin',
+    'subject': 'Décris un arbre que tu aimes.',
+    'text':
+        'Dans notre jardin, il y a un grand pomier. Au printemp, ses branches sont couvertes de jolies fleures blanches. En automne, on cueille de bon fruits.',
+  },
+  {
+    'cycle': 'primaire',
+    'label': 'La rentrée',
+    'subject': 'Raconte ton premier jour d’école.',
+    'text':
+        'Ce matin, j étais très conten de retrouver mes camarades. La maîtresse nous a souri et nous a montré notre nouvel classe décorée.',
+  },
+  {
+    'cycle': 'primaire',
+    'label': 'Mon plat préféré',
+    'subject': 'Décris ton plat préféré.',
+    'text':
+        'J aime beaucoup le couscous que prépare ma grand-mère. Il y a des légumes tendre, des pois chiches et une bonne sause chaude.',
+  },
+  {
+    'cycle': 'primaire',
+    'label': 'Le petit oiseau',
+    'subject': 'Imagine l’histoire d’un petit oiseau.',
+    'text':
+        'Un matin, un petit oiso tombé de son nid pleurait sous l arbre. Lina l a pris doucement dans ses mains et l a déposé près de sa maman.',
+  },
+
+  // ── COLLÈGE (10 exemples) ───────────────────────────────────────────────
+  {
+    'cycle': 'college',
+    'label': 'Sortie en forêt',
     'subject': 'Raconte une sortie en forêt.',
     'text':
         'La semain dernière, nous avons visiter une foret magnifique. Les arbres étais très haut et les oiseaux chanter dans les branches. Nous avons pris de baux photos.',
   },
   {
-    'label': '🏙️ Exemple Lycée',
-    'subject': 'Donne ton avis sur l\'utilisation du téléphone en classe.',
+    'cycle': 'college',
+    'label': 'Protéger la nature',
+    'subject': 'Explique pourquoi il faut protéger la nature.',
+    'text':
+        'La polution menace nos océans et nos animaux. Chaque citoyen doit jeter ses déchet dans la poubelle et planter des arbres pour gardé l air pur.',
+  },
+  {
+    'cycle': 'college',
+    'label': 'Mon sport favori',
+    'subject': 'Présente ton sport préféré et ses bienfaits.',
+    'text':
+        'Je pratique la natation depuis trois an. Ce sport développe les muscles et apprend à bien respiré. Après chaque séance, je me sens calme et plein d énergi.',
+  },
+  {
+    'cycle': 'college',
+    'label': 'Souvenir d’enfance',
+    'subject': 'Raconte un souvenir marquant de ton enfance.',
+    'text':
+        'Je me souviens de mon premier vélo rouge. Mon père m a tenu par la selle pendant que je pédalais. Quand j ai réussi tout seul, j étais vraiment fière.',
+  },
+  {
+    'cycle': 'college',
+    'label': 'Sécurité routière',
+    'subject': 'Rédige des conseils pour éviter les accidents de la route.',
+    'text':
+        'Pour traverser la rue sans danger, il faut toujours regarder à gauche et à droit. Les piéton doivent utiliser le passage clouté et ne jamais courir devant les voiture.',
+  },
+  {
+    'cycle': 'college',
+    'label': 'Économiser l’eau',
+    'subject': 'Explique l’importance d’économiser l’eau.',
+    'text':
+        'L eau est une ressource précieuse qui devient rare. Il ne faut pas laisser le robinet ouvert quand on se brosse les dent. Préférer une douche courte permet aussi d évité le gaspillage.',
+  },
+  {
+    'cycle': 'college',
+    'label': 'Mon futur métier',
+    'subject': 'Décris le métier que tu aimerais exercer plus tard.',
+    'text':
+        'Plus tard, je voudrais devenir pharmacien pour soigner les gens. C est un métier utile où il faut bien connaître les médicament et savoir écouté les patients.',
+  },
+  {
+    'cycle': 'college',
+    'label': 'La solidarité',
+    'subject': 'Raconte une situation où tu as aidé quelqu’un.',
+    'text':
+        'Un jour, mon voisin âgé portait des sacs très lourd devant l immeuble. Je lui ai proposé de l aider jusqu à sa porte. Il m a remercié avec un grand sourir.',
+  },
+  {
+    'cycle': 'college',
+    'label': 'Voyage en train',
+    'subject': 'Raconte un voyage en train avec ta famille.',
+    'text':
+        'Pendant les vacance, nous avons pris le train pour aller à Constantine. Par la fenêtre, je regardais défiler les montagnes et les champs vert. Le trajet a passé vite.',
+  },
+  {
+    'cycle': 'college',
+    'label': 'Plaisir de lire',
+    'subject': 'Explique pourquoi lire des livres est utile.',
+    'text':
+        'Lire des romans enrichit notre vocabulaire et développe notre imagination. Même quinze minute par jour suffisent pour voyager dans d autres monde et mieux écrire.',
+  },
+
+  // ── LYCÉE (10 exemples) ─────────────────────────────────────────────────
+  {
+    'cycle': 'lycee',
+    'label': 'Téléphone en classe',
+    'subject': 'Donne ton avis sur l’utilisation du téléphone en classe.',
     'text':
         'Le téléphone portable est devenus un outil indispensable dans notre vie quotidien. Cependant, son utilisation en classe peut perturbé la concentration des élève si elle n est pas encadrer.',
+  },
+  {
+    'cycle': 'lycee',
+    'label': 'Réseaux sociaux',
+    'subject': 'Analyse les avantages et les risques des réseaux sociaux.',
+    'text':
+        'Les réseaux sociaux permettent de communiquer rapidement et de partagé des informations utiles. Toutefois, passer trop d heure devant l écran nuit au sommeil et crée parfois un isolement social.',
+  },
+  {
+    'cycle': 'lycee',
+    'label': 'L’IA à l’école',
+    'subject': 'Donne ton point de vue sur l’intelligence artificielle à l’école.',
+    'text':
+        'L intelligence artificielle offre des outils formidables pour comprendre des notions complexe. Néanmoins, l élève doit resté actif dans son apprentissage et ne pas copier les réponses sans réfléchir.',
+  },
+  {
+    'cycle': 'lycee',
+    'label': 'Le bénévolat',
+    'subject': 'Rédige un plaidoyer en faveur du bénévolat chez les jeunes.',
+    'text':
+        'S engager dans une association bénévole apprend le sens des responsabilité et la solidarité. Les jeunes qui donne de leur temps acquiert aussi une précieuse expérience humaine.',
+  },
+  {
+    'cycle': 'lycee',
+    'label': 'Climat en danger',
+    'subject': 'Explique les conséquences du réchauffement climatique.',
+    'text':
+        'L augmentation des températures provoque des sécheresses prolongées et la fonte des glacier. Il est urgent de réduire nos émissions polluantes afin de préservé l équilibre de la planète.',
+  },
+  {
+    'cycle': 'lycee',
+    'label': 'Papier vs Écran',
+    'subject': 'Compare le livre papier et la lecture sur écran.',
+    'text':
+        'Bien que la liseuse numérique soit pratique pour transporter plusieurs ouvrage, le livre papier offre un confort visuel incomparable. De plus, tourner les pages facilite souvent la mémorisation.',
+  },
+  {
+    'cycle': 'lycee',
+    'label': 'Éducation pour tous',
+    'subject': 'Réfléchis à l’importance de l’éducation pour tous.',
+    'text':
+        'L accès à l instruction constitue le fondement d une société juste et prospère. Garantir l égalité des chances permet à chaque jeune de développer ces talents, quelle que soit son origine.',
+  },
+  {
+    'cycle': 'lycee',
+    'label': 'L’exode rural',
+    'subject': 'Expose les causes du départ des jeunes vers les grandes villes.',
+    'text':
+        'Beaucoup de jeunes quittent les régions rurales à la recherche d emploi et d universités. Ce phénomène vide progressivement les villages et crée une surcharge démographique dans les métropole.',
+  },
+  {
+    'cycle': 'lycee',
+    'label': 'Apprendre des langues',
+    'subject': 'Explique l’intérêt d’apprendre plusieurs langues.',
+    'text':
+        'Maîtriser plusieurs langues étrangères ouvre de nombreuses opportunité professionnelles et culturelles. Cela stimule également la souplesse intellectuelle et encourage la tolérance envers autrui.',
+  },
+  {
+    'cycle': 'lycee',
+    'label': 'Travail d’équipe',
+    'subject': 'Montre pourquoi le travail en groupe favorise la réussite.',
+    'text':
+        'Collaborer au sein d une équipe permet de confronter des idées différentes et de résoudre des problèmes complexes plus efficacement. Chacun apporte ses compétences pour atteindre un objectif commun.',
   },
 ];
 
@@ -361,7 +558,7 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
               const SizedBox(height: 12),
 
               // ── 4. Quick Test Examples ──────────────────────────────────
-              _buildSamplesRow(),
+              _buildSamplesRow(settings),
               const SizedBox(height: 20),
 
               // ── 5. Error Banner (if offline/parse error) ────────────────
@@ -449,65 +646,75 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0284C7).withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: const Color(0xFF0284C7).withValues(alpha: 0.25),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                '🎯 Sujet demandé (optionnel)',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0284C7),
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              'Sujet demandé (optionnel)',
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
-              const Spacer(),
-              GestureDetector(
-                onTap: () {
-                  _subjectController.clear();
-                  setState(() => _showSubjectField = false);
-                },
-                child: const Icon(
-                  Icons.close_rounded,
-                  size: 16,
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: () {
+                _subjectController.clear();
+                setState(() => _showSubjectField = false);
+              },
+              child: const Text(
+                'Masquer',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textSecondary,
                 ),
               ),
-            ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _subjectController,
+          maxLines: 2,
+          minLines: 1,
+          style: TextStyle(
+            fontFamily: settings.fontFamily,
+            fontSize: 14,
+            color: AppColors.textPrimary,
           ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: _subjectController,
-            maxLines: 2,
-            minLines: 1,
-            style: TextStyle(
-              fontFamily: settings.fontFamily,
+          decoration: InputDecoration(
+            hintText: 'Ex : Décris ton animal préféré en 5 lignes...',
+            hintStyle: TextStyle(
               fontSize: 13.5,
-              color: AppColors.textPrimary,
+              color: AppColors.textSecondary.withValues(alpha: 0.55),
             ),
-            decoration: InputDecoration(
-              hintText: 'Ex: Décris ton animal préféré en 5 lignes...',
-              hintStyle: TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary.withValues(alpha: 0.6),
+            filled: true,
+            fillColor: AppColors.surfaceCard,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(
+                color: AppColors.cardBorder,
+                width: 1.2,
               ),
-              isDense: true,
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -655,12 +862,16 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
     );
   }
 
-  Widget _buildSamplesRow() {
+  Widget _buildSamplesRow(ReadingSettings settings) {
+    final activeCycle = _cycleString(settings);
+    final samplesForCycle =
+        _kSampleTexts.where((s) => s['cycle'] == activeCycle).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Exemples pour tester',
+          'Exemples pour tester (${samplesForCycle.length})',
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
@@ -671,7 +882,7 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: _kSampleTexts.map((sample) {
+            children: samplesForCycle.map((sample) {
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: GestureDetector(
