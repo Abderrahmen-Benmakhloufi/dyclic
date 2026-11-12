@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lecture_aide/features/writing/models/writing_error_profile.dart';
 import 'package:lecture_aide/features/writing/models/writing_feedback_model.dart';
 import 'package:lecture_aide/features/writing/services/writing_cache_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -83,5 +84,27 @@ void main() {
     expect(removed, isFalse);
     expect(cacheService.isFavorite('WR-01'), isFalse);
     expect(cacheService.getFavorites(), isEmpty);
+  });
+
+  test('WritingErrorProfile accumulates mistakes and builds compact prompt summary',
+      () async {
+    expect(cacheService.getErrorProfile().totalEssays, equals(0));
+    expect(const WritingErrorProfile().toCompactPromptSummary(), isEmpty);
+
+    await cacheService.recordErrorProfile(sampleResult);
+    await cacheService.recordErrorProfile(sampleResult);
+
+    final profile = cacheService.getErrorProfile();
+    expect(profile.totalEssays, equals(2));
+    expect(profile.categoryCounts['inversion'], equals(2));
+    expect(profile.recurringErrors['chavel -> cheval'], equals(2));
+
+    final summary = profile.toCompactPromptSummary();
+    expect(summary, contains('sur 2 productions'));
+    expect(summary, contains('Inversion & Confusion (2)'));
+    expect(summary, contains('"chavel -> cheval" (2x)'));
+
+    await cacheService.clearErrorProfile();
+    expect(cacheService.getErrorProfile().totalEssays, equals(0));
   });
 }

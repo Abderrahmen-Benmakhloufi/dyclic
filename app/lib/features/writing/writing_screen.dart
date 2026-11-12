@@ -370,15 +370,18 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
 
     try {
       final service = WritingGeminiService();
+      final errorProfile = _cacheService?.getErrorProfile();
       final result = await service.analyzeWriting(
         studentText: text,
         subjectPrompt: subject,
         learnerLevelCode: learnerCode,
         profile: profile,
+        errorProfile: errorProfile,
       );
 
       if (_cacheService != null) {
         await _cacheService!.saveResult(result);
+        await _cacheService!.recordErrorProfile(result);
       }
 
       if (!mounted) return;

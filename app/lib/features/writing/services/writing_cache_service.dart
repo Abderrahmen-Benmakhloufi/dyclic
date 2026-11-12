@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/writing_error_profile.dart';
 import '../models/writing_feedback_model.dart';
 
-/// Service managing locally saved writing evaluations (History) and Favorites.
+/// Service managing locally saved writing evaluations (History), Favorites,
+/// and the cumulative Error History Profile.
 class WritingCacheService {
   static const String _kHistoryKey = 'writing_feedback_history';
   static const String _kFavoritesKey = 'writing_feedback_favorites';
+  static const String _kErrorProfileKey = 'writing_error_profile';
   static const int _kMaxHistoryItems = 25;
 
   final SharedPreferences _prefs;
@@ -128,5 +131,36 @@ class WritingCacheService {
     final rawList = favorites.map((e) => jsonEncode(e.toJson())).toList();
     await _prefs.setStringList(_kFavoritesKey, rawList);
     return isNowFavorite;
+  }
+
+  // ── Cumulative Error History Profile ──────────────────────────────────────
+
+  /// Retrieves the student's cumulative error history profile.
+  WritingErrorProfile getErrorProfile() {
+    final raw = _prefs.getString(_kErrorProfileKey);
+    if (raw == null || raw.isEmpty) {
+      return const WritingErrorProfile();
+    }
+    try {
+      final Map<String, dynamic> json =
+          jsonDecode(raw) as Map<String, dynamic>;
+      return WritingErrorProfile.fromJson(json);
+    } catch (_) {
+      return const WritingErrorProfile();
+    }
+  }
+
+  /// Updates and persists the cumulative error history profile from a new analysis.
+  Future<WritingErrorProfile> recordErrorProfile(
+      WritingFeedbackResult result) async {
+    final current = getErrorProfile();
+    final updated = current.recordFeedback(result);
+    await _prefs.setString(_kErrorProfileKey, jsonEncode(updated.toJson()));
+    return updated;
+  }
+
+  /// Resets the cumulative error history profile.
+  Future<void> clearErrorProfile() async {
+    await _prefs.remove(_kErrorProfileKey);
   }
 }

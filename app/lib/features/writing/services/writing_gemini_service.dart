@@ -7,6 +7,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import '../../../core/ai/gemini_config.dart';
 import '../../../core/learner_profile/learner_profile_model.dart';
 import '../../instructions/services/gemini_service.dart';
+import '../models/writing_error_profile.dart';
 import '../models/writing_feedback_model.dart';
 
 /// Service communicating with Gemini API to analyze a student's written French text,
@@ -83,10 +84,12 @@ ${directives.join('\n')}
     String subjectPrompt = '',
     required String learnerLevelCode,
     LearnerProfile? profile,
+    WritingErrorProfile? errorProfile,
   }) async {
     final cycle = _cycleFromLearnerCode(learnerLevelCode);
     final cycleLabel = _cycleLabelFr(cycle);
     final profileDirectives = _buildProfileDirectives(profile);
+    final errorHistorySection = errorProfile?.toCompactPromptSummary() ?? '';
 
     final subjectSection = subjectPrompt.trim().isNotEmpty
         ? 'Sujet / Consigne donnée par le professeur : "$subjectPrompt"\n'
@@ -98,7 +101,7 @@ Tu accompagnes un élève de niveau $cycleLabel qui vient d'écrire un texte par
 Ton objectif N'EST PAS juste de corriger à sa place, mais de l'aider à COMPRENDRE chaque erreur, son origine et comment l'éviter la prochaine fois.
 
 $profileDirectives
-
+$errorHistorySection
 $subjectSection
 Texte écrit par l'élève :
 """
