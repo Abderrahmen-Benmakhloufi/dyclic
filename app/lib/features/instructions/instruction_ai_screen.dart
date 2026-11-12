@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/learner_profile/learner_profile_notifier.dart';
@@ -283,6 +284,17 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
     _focusNode.requestFocus();
   }
 
+  Future<void> _pasteText() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim() ?? '';
+    if (text.isNotEmpty) {
+      setState(() {
+        _controller.text = text;
+        _hasError = false;
+      });
+    }
+  }
+
   void _clearInput() {
     _controller.clear();
     setState(() {
@@ -349,6 +361,7 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
               onChanged: (_) => setState(() {}),
               onClear: _clearInput,
               onScan: _scanText,
+              onPaste: _pasteText,
               theme: theme,
             ),
             const SizedBox(height: 12),
@@ -551,6 +564,7 @@ class _InputSection extends StatelessWidget {
     required this.onChanged,
     required this.onClear,
     required this.onScan,
+    required this.onPaste,
     required this.theme,
   });
 
@@ -559,6 +573,7 @@ class _InputSection extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
   final VoidCallback onScan;
+  final VoidCallback onPaste;
   final ThemeData theme;
 
   @override
@@ -610,8 +625,38 @@ class _InputSection extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(width: 6),
+            // Paste button
+            GestureDetector(
+              onTap: onPaste,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceCard,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.content_paste_rounded,
+                        size: 13, color: AppColors.textSecondary),
+                    SizedBox(width: 4),
+                    Text(
+                      'Coller',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             if (hasText) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               GestureDetector(
                 onTap: onClear,
                 child: Container(
