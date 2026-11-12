@@ -411,6 +411,10 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
         _hasError = true;
         _errorMessage = e.toString();
       });
+    } finally {
+      if (mounted && _isLoading) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

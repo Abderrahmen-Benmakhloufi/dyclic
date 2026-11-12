@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 import '../../../core/ai/gemini_config.dart';
@@ -146,14 +148,22 @@ Règles importantes :
           generationConfig: _generationConfig,
         );
 
-        final response = await model.generateContent([Content.text(prompt)]);
+        final response = await model
+            .generateContent([Content.text(prompt)])
+            .timeout(const Duration(seconds: 20));
         final raw = response.text ?? '';
         if (raw.isEmpty) continue;
 
-        final cleaned = raw
+        var cleaned = raw
             .replaceAll(RegExp(r'^```json\s*', multiLine: true), '')
             .replaceAll(RegExp(r'^```\s*', multiLine: true), '')
             .trim();
+
+        final startIdx = cleaned.indexOf('{');
+        final endIdx = cleaned.lastIndexOf('}');
+        if (startIdx != -1 && endIdx != -1 && endIdx > startIdx) {
+          cleaned = cleaned.substring(startIdx, endIdx + 1);
+        }
 
         final Map<String, dynamic> json =
             jsonDecode(cleaned) as Map<String, dynamic>;
@@ -166,11 +176,17 @@ Règles importantes :
         json['createdAtMs'] = DateTime.now().millisecondsSinceEpoch;
 
         return WritingFeedbackResult.fromJson(json);
+      } on TimeoutException {
+        debugPrint('WritingGeminiService timeout on $modelName');
+        lastErrorMsg = 'Délai dépassé (connexion lente ou serveur occupé).';
       } on GenerativeAIException catch (e) {
+        debugPrint('WritingGeminiService AI error on $modelName: ${e.message}');
         lastAiException = e;
       } on FormatException catch (e) {
+        debugPrint('WritingGeminiService JSON error on $modelName: ${e.message}');
         lastFormatException = e;
       } catch (e) {
+        debugPrint('WritingGeminiService error on $modelName: $e');
         lastErrorMsg = e.toString();
       }
     }
