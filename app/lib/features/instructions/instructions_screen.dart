@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/tts/tts_service.dart';
+import '../../core/widgets/app_asset_icon.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import 'instruction_detail_screen.dart';
 import 'models/instruction_model.dart';
@@ -733,14 +734,28 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
                             color: typeBg,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(
-                            '${item.questionTypeEmoji} ${item.questionTypeLabel}',
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.bold,
-                              color: typeColor,
-                              fontFamily: fontFamily,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AppAssetIcon(
+                                assetPath: item.questionTypeAssetPath,
+                                size: 15,
+                                fallbackEmoji: item.questionTypeEmoji,
+                              ),
+                              const SizedBox(width: 5),
+                              Flexible(
+                                child: Text(
+                                  item.questionTypeLabel,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: typeColor,
+                                    fontFamily: fontFamily,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

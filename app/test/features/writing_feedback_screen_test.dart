@@ -116,7 +116,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Tap Inversion & Confusion filter
-    await tester.tap(find.text('🔄 Inversion & Confusion (1)'));
+    await tester.tap(find.text('Inversion & Confusion (1)'));
     await tester.pumpAndSettle();
 
     expect(find.text('❌ chavel'), findsOneWidget);

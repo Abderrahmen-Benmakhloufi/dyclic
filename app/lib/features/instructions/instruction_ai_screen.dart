@@ -7,6 +7,7 @@ import '../../core/reading_settings/reading_settings_model.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/services/ocr_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_asset_icon.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import 'instruction_detail_screen.dart';
 import 'instructions_screen.dart';
@@ -98,11 +99,11 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
   String _cycleLabel(ReadingSettings s) {
     switch (s.learnerLevel) {
       case LearnerLevel.primaire:
-        return '🎒 Primaire';
+        return 'Primaire';
       case LearnerLevel.secondaire:
-        return '🎓 Lycée';
+        return 'Lycée';
       case LearnerLevel.moyen:
-        return '📚 Collège';
+        return 'Collège';
     }
   }
 
@@ -350,6 +351,7 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
             // ── 2. Cycle chip (read-only display, opens settings) ───────
             _CyclePill(
               label: _cycleLabel(settings),
+              assetPath: AppUiAssets.cycleForLevel(settings.learnerLevel),
               onTap: () => ReadingSettingsSheet.show(context),
             ),
             const SizedBox(height: 18),
@@ -459,7 +461,11 @@ class _CatalogBannerCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Center(
-                  child: Text('📚', style: TextStyle(fontSize: 22)),
+                  child: AppAssetIcon(
+                    assetPath: AppUiAssets.cycleCollege,
+                    size: 30,
+                    fallbackEmoji: '📚',
+                  ),
                 ),
               ),
               const SizedBox(width: 14),
@@ -502,8 +508,13 @@ class _CatalogBannerCard extends StatelessWidget {
 
 /// Read-only chip showing the learner's current cycle, tappable to change it.
 class _CyclePill extends StatelessWidget {
-  const _CyclePill({required this.label, required this.onTap});
+  const _CyclePill({
+    required this.label,
+    required this.assetPath,
+    required this.onTap,
+  });
   final String label;
+  final String assetPath;
   final VoidCallback onTap;
 
   @override
@@ -533,6 +544,8 @@ class _CyclePill extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                AppAssetIcon(assetPath: assetPath, size: 18),
+                const SizedBox(width: 6),
                 Text(
                   label,
                   style: const TextStyle(
@@ -1118,15 +1131,15 @@ class _HistoryAndFavoritesSection extends StatelessWidget {
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: item.questionTypeLightColor,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(
-                            item.questionTypeEmoji,
-                            style: const TextStyle(fontSize: 14),
+                          child: AppAssetIcon(
+                            assetPath: item.questionTypeAssetPath,
+                            size: 20,
+                            fallbackEmoji: item.questionTypeEmoji,
                           ),
                         ),
                         const SizedBox(width: 10),

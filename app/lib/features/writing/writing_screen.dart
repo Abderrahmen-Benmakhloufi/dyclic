@@ -7,6 +7,7 @@ import '../../core/reading_settings/reading_settings_model.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/services/ocr_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_asset_icon.dart';
 import '../instructions/services/gemini_service.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import 'models/writing_feedback_model.dart';
@@ -291,11 +292,11 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
   String _cycleLabel(ReadingSettings s) {
     switch (s.learnerLevel) {
       case LearnerLevel.primaire:
-        return '🎒 Primaire';
+        return 'Primaire';
       case LearnerLevel.secondaire:
-        return '🎓 Lycée';
+        return 'Lycée';
       case LearnerLevel.moyen:
-        return '📚 Collège';
+        return 'Collège';
     }
   }
 
@@ -534,6 +535,12 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          AppAssetIcon(
+                            assetPath:
+                                AppUiAssets.cycleForLevel(settings.learnerLevel),
+                            size: 18,
+                          ),
+                          const SizedBox(width: 6),
                           Text(
                             _cycleLabel(settings),
                             style: const TextStyle(
@@ -1144,17 +1151,19 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 5),
+                          padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: errCount == 0
                                 ? const Color(0xFF10B981).withValues(alpha: 0.12)
                                 : AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(
-                            errCount == 0 ? '🎉' : '✍️',
-                            style: const TextStyle(fontSize: 14),
+                          child: AppAssetIcon(
+                            assetPath: errCount == 0
+                                ? AppUiAssets.writingCelebration
+                                : AppUiAssets.featWriting,
+                            size: 20,
+                            fallbackEmoji: errCount == 0 ? '🎉' : '✍️',
                           ),
                         ),
                         const SizedBox(width: 10),

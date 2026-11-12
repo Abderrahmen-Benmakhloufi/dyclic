@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/reading_settings/reading_settings_model.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_asset_icon.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import '../reading_support/calibration/reading_calibration_screen.dart';
 import '../reading_support/reading_support_screen.dart';
@@ -73,27 +74,45 @@ class HomeScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
           children: [
-            // Greeting Header
-            Text(
-              'Bonjour 👋',
-              style: theme.textTheme.displayMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Que souhaitez-vous faire aujourd’hui ?',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+            // Greeting Header with cycle-adapted mascot avatar
+            Row(
+              children: [
+                AppAssetIcon(
+                  assetPath: AppUiAssets.avatarForLevel(settings.learnerLevel),
+                  size: 48,
+                  fallbackEmoji: '👋',
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Bonjour !',
+                        style: theme.textTheme.displayMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Que souhaitez-vous faire aujourd’hui ?',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
 
             // 1. M'aider à lire
             _buildFeatureCard(
               context: context,
-              icon: '📖',
+              assetPath: AppUiAssets.featReading,
+              fallbackEmoji: '📖',
               title: 'M’aider à lire',
               description: 'Faciliter la lecture du texte.',
               onTap: () {
@@ -118,7 +137,8 @@ class HomeScreen extends ConsumerWidget {
             // Aide au décodage (Lettres et sons)
             _buildFeatureCard(
               context: context,
-              icon: '🔤',
+              assetPath: AppUiAssets.featDecoding,
+              fallbackEmoji: '🔤',
               title: 'Aide au décodage',
               description: 'Découvrir comment se prononcent les lettres et les sons.',
               onTap: () => Navigator.of(context).push(
@@ -130,7 +150,8 @@ class HomeScreen extends ConsumerWidget {
             // 2. Écouter le texte
             _buildFeatureCard(
               context: context,
-              icon: '🔊',
+              assetPath: AppUiAssets.featTts,
+              fallbackEmoji: '🔊',
               title: 'Écouter le texte',
               description: 'Écouter le texte à voix haute.',
               onTap: () => Navigator.of(context).push(
@@ -142,7 +163,8 @@ class HomeScreen extends ConsumerWidget {
             // 3. M'aider à écrire
             _buildFeatureCard(
               context: context,
-              icon: '✏️',
+              assetPath: AppUiAssets.featWriting,
+              fallbackEmoji: '✏️',
               title: 'M’aider à écrire',
               description: 'Être accompagné pour réaliser une production écrite.',
               onTap: () => Navigator.of(context).push(
@@ -154,7 +176,8 @@ class HomeScreen extends ConsumerWidget {
             // 4. Simplifier le texte
             _buildFeatureCard(
               context: context,
-              icon: '📝',
+              assetPath: AppUiAssets.featSimplify,
+              fallbackEmoji: '📝',
               title: 'Simplifier le texte',
               description: 'Rendre le texte plus simple et plus facile à comprendre.',
               onTap: () => Navigator.of(context).push(
@@ -166,7 +189,8 @@ class HomeScreen extends ConsumerWidget {
             // 5. Expliquer la consigne
             _buildFeatureCard(
               context: context,
-              icon: '💡',
+              assetPath: AppUiAssets.featInstructions,
+              fallbackEmoji: '💡',
               title: 'Expliquer la consigne',
               description: 'Comprendre ce qu’on me demande de faire.',
               onTap: () => Navigator.of(context).push(
@@ -192,7 +216,8 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildFeatureCard({
     required BuildContext context,
-    required String icon,
+    required String assetPath,
+    required String fallbackEmoji,
     required String title,
     required String description,
     required VoidCallback onTap,
@@ -218,16 +243,18 @@ class HomeScreen extends ConsumerWidget {
           children: [
             // Icon container
             Container(
-              width: 52,
-              height: 52,
+              width: 54,
+              height: 54,
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8F7F4),
                 borderRadius: BorderRadius.circular(14),
               ),
               alignment: Alignment.center,
-              child: Text(
-                icon,
-                style: const TextStyle(fontSize: 28),
+              child: AppAssetIcon(
+                assetPath: assetPath,
+                size: 40,
+                fallbackEmoji: fallbackEmoji,
               ),
             ),
             const SizedBox(width: 16),

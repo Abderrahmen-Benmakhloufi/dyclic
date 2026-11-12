@@ -6,6 +6,7 @@ import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/reading_palette.dart';
 import '../../core/tts/tts_service.dart';
+import '../../core/widgets/app_asset_icon.dart';
 import '../decoding/decoding_screen.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import 'models/writing_feedback_model.dart';
@@ -237,7 +238,8 @@ class _WritingFeedbackScreenState extends ConsumerState<WritingFeedbackScreen> {
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: _CategoryFilterChip(
-                              label: '${cat.emoji} ${cat.labelFr} ($count)',
+                              label: '${cat.labelFr} ($count)',
+                              assetPath: cat.assetPath,
                               isSelected: _selectedCategory == cat,
                               color: cat.color,
                               onTap: () =>
@@ -443,7 +445,11 @@ class _WritingFeedbackScreenState extends ConsumerState<WritingFeedbackScreen> {
       ),
       child: Column(
         children: [
-          const Text('🎉', style: TextStyle(fontSize: 36)),
+          const AppAssetIcon(
+            assetPath: AppUiAssets.writingCelebration,
+            size: 64,
+            fallbackEmoji: '🎉',
+          ),
           const SizedBox(height: 8),
           Text(
             'Aucune erreur détectée !',
@@ -509,14 +515,25 @@ class _WritingFeedbackScreenState extends ConsumerState<WritingFeedbackScreen> {
                   color: error.category.lightColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  '${error.category.emoji} ${error.category.labelFr}',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.bold,
-                    color: catColor,
-                    fontFamily: fontFamily,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppAssetIcon(
+                      assetPath: error.category.assetPath,
+                      size: 16,
+                      fallbackEmoji: error.category.emoji,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      error.category.labelFr,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.bold,
+                        color: catColor,
+                        fontFamily: fontFamily,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const Spacer(),
@@ -803,12 +820,14 @@ class _CategoryFilterChip extends StatelessWidget {
     required this.isSelected,
     required this.color,
     required this.onTap,
+    this.assetPath,
   });
 
   final String label;
   final bool isSelected;
   final Color color;
   final VoidCallback onTap;
+  final String? assetPath;
 
   @override
   Widget build(BuildContext context) {
@@ -825,13 +844,22 @@ class _CategoryFilterChip extends StatelessWidget {
             width: 1.2,
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: isSelected ? Colors.white : AppColors.textPrimary,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (assetPath != null) ...[
+              AppAssetIcon(assetPath: assetPath!, size: 16),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: isSelected ? Colors.white : AppColors.textPrimary,
+              ),
+            ),
+          ],
         ),
       ),
     );

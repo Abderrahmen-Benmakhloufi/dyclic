@@ -30,7 +30,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Bienvenue ! 👋'), findsOneWidget);
+    expect(find.text('Bienvenue !'), findsOneWidget);
     expect(find.text('Primaire'), findsOneWidget);
     expect(find.text('Moyen (Collège)'), findsOneWidget);
     expect(find.text('Secondaire (Lycée)'), findsOneWidget);
@@ -86,7 +86,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Bonjour 👋'), findsOneWidget);
+    expect(find.text('Bonjour !'), findsOneWidget);
     expect(find.text('M’aider à lire'), findsOneWidget);
     expect(find.text('Écouter le texte'), findsOneWidget);
     expect(find.text('M’aider à écrire'), findsOneWidget);
@@ -123,6 +123,6 @@ void main() {
     await tester.tap(find.text('Non, commencer directement'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Bonjour 👋'), findsOneWidget);
+    expect(find.text('Bonjour !'), findsOneWidget);
   });
 }

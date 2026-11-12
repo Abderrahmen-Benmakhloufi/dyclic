@@ -38,6 +38,7 @@ flutter:
     - assets/audio/
     - assets/data/
     - assets/images/characters/
+    - assets/images/ui/
 
   fonts:
     - family: Atkinson Hyperlegible

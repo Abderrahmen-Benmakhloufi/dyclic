@@ -37,7 +37,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text("M'aider à écrire ✍️"), findsOneWidget);
-    expect(find.text('📚 Collège'), findsOneWidget);
+    expect(find.text('Collège'), findsOneWidget);
     expect(find.text('Mon texte'), findsOneWidget);
     expect(find.text('Scanner'), findsOneWidget);
   });

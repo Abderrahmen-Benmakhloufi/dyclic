@@ -4,6 +4,7 @@ import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/reading_palette.dart';
 import '../../core/tts/tts_service.dart';
+import '../../core/widgets/app_asset_icon.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import 'models/instruction_model.dart';
 import 'services/instruction_cache_service.dart';
@@ -268,14 +269,25 @@ class _InstructionDetailScreenState
                   color: typeBg,
                   borderRadius: BorderRadius.circular(9),
                 ),
-                child: Text(
-                  '${item.questionTypeEmoji} ${item.questionTypeLabel}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: typeColor,
-                    fontFamily: fontFamily,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppAssetIcon(
+                      assetPath: item.questionTypeAssetPath,
+                      size: 16,
+                      fallbackEmoji: item.questionTypeEmoji,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      item.questionTypeLabel,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: typeColor,
+                        fontFamily: fontFamily,
+                      ),
+                    ),
+                  ],
                 ),
               ),
 

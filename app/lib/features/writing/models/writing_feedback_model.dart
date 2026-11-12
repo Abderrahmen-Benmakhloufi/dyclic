@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/app_asset_icon.dart';
 
 /// 5 DYS-aligned error categories matching the app's diagnostic dimensions.
 enum WritingErrorCategory {
@@ -52,6 +53,21 @@ extension WritingErrorCategoryX on WritingErrorCategory {
         return '📐';
       case WritingErrorCategory.ponctuation:
         return '✏️';
+    }
+  }
+
+  String get assetPath {
+    switch (this) {
+      case WritingErrorCategory.inversion:
+        return AppUiAssets.errInversion;
+      case WritingErrorCategory.phonetique:
+        return AppUiAssets.errPhonetique;
+      case WritingErrorCategory.regleLecture:
+        return AppUiAssets.errRegle;
+      case WritingErrorCategory.grammaire:
+        return AppUiAssets.errGrammaire;
+      case WritingErrorCategory.ponctuation:
+        return AppUiAssets.errPonctuation;
     }
   }
 

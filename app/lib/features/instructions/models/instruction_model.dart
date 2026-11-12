@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/app_asset_icon.dart';
 
 /// Model representing a single decomposed instruction step (French only)
 class InstructionStep {
@@ -111,6 +112,20 @@ class InstructionItem {
         return '✍️';
       default:
         return '💡';
+    }
+  }
+
+  /// Asset illustration path for this question type
+  String get questionTypeAssetPath {
+    switch (questionType.toLowerCase()) {
+      case 'comprehension':
+        return AppUiAssets.qtypeComprehension;
+      case 'langue':
+        return AppUiAssets.qtypeLangue;
+      case 'production':
+        return AppUiAssets.qtypeProduction;
+      default:
+        return AppUiAssets.featInstructions;
     }
   }
 

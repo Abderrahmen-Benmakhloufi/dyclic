@@ -64,7 +64,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Default learner level is "moyen" → Collège
-    expect(find.text('📚 Collège'), findsOneWidget);
+    expect(find.text('Collège'), findsOneWidget);
     expect(find.text('Niveau détecté :'), findsOneWidget);
   });
 

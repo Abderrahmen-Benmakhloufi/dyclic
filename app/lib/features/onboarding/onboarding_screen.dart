@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/reading_settings/reading_settings_model.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_asset_icon.dart';
 import '../diagnostic/diagnostic_gate_screen.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -28,12 +29,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             children: [
               const SizedBox(height: 16),
               // Welcome header
-              Text(
-                'Bienvenue ! 👋',
-                style: theme.textTheme.displayMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+              Row(
+                children: [
+                  AppAssetIcon(
+                    assetPath: AppUiAssets.avatarForLevel(_selectedLevel),
+                    size: 46,
+                    fallbackEmoji: '👋',
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Bienvenue !',
+                      style: theme.textTheme.displayMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               Text(
@@ -51,7 +64,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   children: [
                     _buildLevelCard(
                       level: LearnerLevel.primaire,
-                      icon: '🎒',
+                      assetPath: AppUiAssets.cyclePrimaire,
+                      fallbackEmoji: '🎒',
                       title: 'Primaire',
                       subtitle: '5e Année Primaire (5e AP)',
                       description:
@@ -60,7 +74,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     const SizedBox(height: 14),
                     _buildLevelCard(
                       level: LearnerLevel.moyen,
-                      icon: '📚',
+                      assetPath: AppUiAssets.cycleCollege,
+                      fallbackEmoji: '📚',
                       title: 'Moyen (Collège)',
                       subtitle: '1e à 4e Année Moyenne (1e–4e AM)',
                       description:
@@ -69,7 +84,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     const SizedBox(height: 14),
                     _buildLevelCard(
                       level: LearnerLevel.secondaire,
-                      icon: '🎓',
+                      assetPath: AppUiAssets.cycleLycee,
+                      fallbackEmoji: '🎓',
                       title: 'Secondaire (Lycée)',
                       subtitle: '1e à 3e Année Secondaire (1e–3e AS)',
                       description:
@@ -107,7 +123,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildLevelCard({
     required LearnerLevel level,
-    required String icon,
+    required String assetPath,
+    required String fallbackEmoji,
     required String title,
     required String subtitle,
     required String description,
@@ -144,10 +161,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Emoji badge
+            // Cycle illustration badge
             Container(
-              width: 48,
-              height: 48,
+              width: 52,
+              height: 52,
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.primary.withAlpha(20)
@@ -155,9 +173,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 borderRadius: BorderRadius.circular(14),
               ),
               alignment: Alignment.center,
-              child: Text(
-                icon,
-                style: const TextStyle(fontSize: 24),
+              child: AppAssetIcon(
+                assetPath: assetPath,
+                size: 38,
+                fallbackEmoji: fallbackEmoji,
               ),
             ),
             const SizedBox(width: 14),
