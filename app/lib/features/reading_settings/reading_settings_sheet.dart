@@ -33,6 +33,10 @@ class ReadingSettingsSheet extends ConsumerWidget {
     final screenHeight = MediaQuery.of(context).size.height;
 
     final scrollableBody = SingleChildScrollView(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -265,6 +269,9 @@ class ReadingSettingsSheet extends ConsumerWidget {
 
     return Container(
       height: halfScreen ? screenHeight * 0.52 : null,
+      constraints: BoxConstraints(
+        maxHeight: halfScreen ? screenHeight * 0.52 : screenHeight * 0.88,
+      ),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -291,38 +298,36 @@ class ReadingSettingsSheet extends ConsumerWidget {
 
             // Title bar with reset and close buttons
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Réglages de lecture',
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                const Expanded(
+                  child: Text(
+                    'Réglages de lecture',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextButton(
-                      onPressed: () => notifier.resetToDefaults(),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: const Text('Rétablir'),
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 22),
-                      tooltip: 'Fermer',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      splashRadius: 18,
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () => notifier.resetToDefaults(),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('Rétablir'),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 22),
+                  tooltip: 'Fermer',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  splashRadius: 18,
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
             ),
@@ -332,7 +337,7 @@ class ReadingSettingsSheet extends ConsumerWidget {
             if (halfScreen)
               Expanded(child: scrollableBody)
             else
-              scrollableBody,
+              Flexible(child: scrollableBody),
           ],
         ),
       ),
