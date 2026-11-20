@@ -6,6 +6,9 @@
 class FrenchSyllableService {
   FrenchSyllableService._();
 
+  static final Map<String, List<String>> _cache = {};
+  static const int _maxCacheSize = 2000;
+
   /// Groupes de consonnes inséparables en français :
   /// - Occlusive/fricative + liquide (l/r)
   /// - Digraphes formant un son consonantique unique (ch, ph, th, gn, qu, gu)
@@ -35,6 +38,9 @@ class FrenchSyllableService {
   /// Préserve la casse originale des caractères.
   static List<String> segmentWord(String word) {
     if (word.length <= 2) return [word];
+
+    final cached = _cache[word];
+    if (cached != null) return cached;
 
     final lower = word.toLowerCase();
 
@@ -118,7 +124,12 @@ class FrenchSyllableService {
       syllables.add(word.substring(prev));
     }
 
-    return syllables.isEmpty ? [word] : syllables;
+    final result = syllables.isEmpty ? [word] : syllables;
+    if (_cache.length >= _maxCacheSize) {
+      _cache.clear();
+    }
+    _cache[word] = result;
+    return result;
   }
 }
 

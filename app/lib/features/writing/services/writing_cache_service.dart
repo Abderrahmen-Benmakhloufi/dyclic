@@ -83,6 +83,13 @@ class WritingCacheService {
     await _prefs.setStringList(_kHistoryKey, rawList);
   }
 
+  Future<void> deleteHistoryItem(String id) async {
+    final history = getHistory();
+    history.removeWhere((item) => item.id == id);
+    final rawList = history.map((e) => jsonEncode(e.toJson())).toList();
+    await _prefs.setStringList(_kHistoryKey, rawList);
+  }
+
   Future<void> clearHistory() async {
     await _prefs.remove(_kHistoryKey);
   }

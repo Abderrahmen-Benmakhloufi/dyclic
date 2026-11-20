@@ -97,7 +97,7 @@ abstract class AppLocalizations {
   /// Titre principal de l'application
   ///
   /// In fr, this message translates to:
-  /// **'Aide à la Lecture et à l\'Écriture'**
+  /// **'AideLecture'**
   String get appTitle;
 
   /// Slogan bienveillant de l'application
@@ -139,49 +139,49 @@ abstract class AppLocalizations {
   /// No description provided for @levelPrimaireSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'5e Année Primaire (5e AP)'**
+  /// **'École primaire (Consolidation)'**
   String get levelPrimaireSubtitle;
 
   /// No description provided for @levelPrimaireDesc.
   ///
   /// In fr, this message translates to:
-  /// **'Phrases très courtes, repères visuels clairs et vocabulaire guidé.'**
+  /// **'Phrases courtes, repères visuels clairs et vocabulaire guidé.'**
   String get levelPrimaireDesc;
 
   /// No description provided for @levelMoyenTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Moyen (Collège)'**
+  /// **'Moyen'**
   String get levelMoyenTitle;
 
   /// No description provided for @levelMoyenSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'1e à 4e Année Moyenne (1e-4e AM)'**
+  /// **'Collège / Enseignement moyen (BEM / Brevet)'**
   String get levelMoyenSubtitle;
 
   /// No description provided for @levelMoyenDesc.
   ///
   /// In fr, this message translates to:
-  /// **'Situations d\'intégration, explications pas à pas et enrichissement du vocabulaire.'**
+  /// **'Situations complexes, explications pas à pas et préparation au Brevet.'**
   String get levelMoyenDesc;
 
   /// No description provided for @levelSecondaireTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Secondaire (Lycée)'**
+  /// **'Lycée'**
   String get levelSecondaireTitle;
 
   /// No description provided for @levelSecondaireSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'1e à 3e Année Secondaire (1e-3e AS)'**
+  /// **'2nde – 1ère – Terminale (Bac)'**
   String get levelSecondaireSubtitle;
 
   /// No description provided for @levelSecondaireDesc.
   ///
   /// In fr, this message translates to:
-  /// **'Textes plus denses, démarche argumentative et réflexion méthodique.'**
+  /// **'Textes denses et argumentatifs, démarche réflexive et préparation au Bac.'**
   String get levelSecondaireDesc;
 
   /// No description provided for @currentLevelBadge.

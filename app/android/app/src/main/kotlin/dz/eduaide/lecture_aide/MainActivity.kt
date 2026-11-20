@@ -54,11 +54,12 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "speak" -> {
                     val text = call.argument<String>("text") ?: ""
-                    if (text.isBlank()) {
+                    val customSentences = call.argument<List<String>>("sentences")
+                    if (text.isBlank() && (customSentences == null || customSentences.isEmpty())) {
                         result.success(mapOf("success" to false, "error" to "Empty text"))
                         return@setMethodCallHandler
                     }
-                    speakUniversal(text)
+                    speakUniversal(text, customSentences)
                     result.success(mapOf("success" to true))
                 }
                 "stop" -> {
@@ -109,9 +110,9 @@ class MainActivity : FlutterActivity() {
 
     // ── Universal Hybrid Speech Entry Point ────────────────────────────────────
 
-    private fun speakUniversal(rawText: String) {
+    private fun speakUniversal(rawText: String, customSentences: List<String>? = null) {
         val text = rawText.trim()
-        if (text.isEmpty()) return
+        if (text.isEmpty() && (customSentences == null || customSentences.isEmpty())) return
 
         stopAllAudio(notifyFlutter = false)
         cancelCurrentSpeech = false
@@ -120,10 +121,14 @@ class MainActivity : FlutterActivity() {
         unmuteIfNecessary()
         requestAudioFocus()
 
-        // Split into manageable chunks (by punctuation or newline)
-        val sentences = text.split(Regex("(?<=[.!?;\n])\\s+"))
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
+        // Use custom sentences from Flutter if provided, otherwise split by punctuation / newline
+        val sentences = if (!customSentences.isNullOrEmpty()) {
+            customSentences.map { it.trim() }.filter { it.isNotEmpty() }
+        } else {
+            text.split(Regex("(?<=[.!?;\n])\\s+"))
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+        }
 
         if (sentences.isEmpty()) {
             isPlayingSequence = false
@@ -149,33 +154,57 @@ class MainActivity : FlutterActivity() {
 
         val currentSentence = sentences[index]
 
-        // Notify start on first sentence
-        if (index == 0) {
-            runOnUiThread {
-                methodChannel?.invokeMethod("onStart", null)
-            }
-        }
-
-        playSingleUtterance(currentSentence) {
-            if (!cancelCurrentSpeech) {
-                playSentenceQueue(sentences, index + 1)
-            } else {
-                isPlayingSequence = false
-                releaseAudioFocus()
-                runOnUiThread {
-                    methodChannel?.invokeMethod("onDone", null)
+        playSingleUtterance(
+            text = currentSentence,
+            onStarted = { durationMs ->
+                if (!cancelCurrentSpeech) {
+                    runOnUiThread {
+                        if (index == 0) {
+                            methodChannel?.invokeMethod("onStart", null)
+                        }
+                        methodChannel?.invokeMethod(
+                            "onSentenceStart",
+                            mapOf(
+                                "sentenceIndex" to index,
+                                "totalSentences" to sentences.size,
+                                "sentenceText" to currentSentence,
+                                "durationMs" to durationMs
+                            )
+                        )
+                    }
+                }
+            },
+            onDone = {
+                if (!cancelCurrentSpeech) {
+                    runOnUiThread {
+                        methodChannel?.invokeMethod(
+                            "onSentenceDone",
+                            mapOf("sentenceIndex" to index)
+                        )
+                    }
+                    playSentenceQueue(sentences, index + 1)
+                } else {
+                    isPlayingSequence = false
+                    releaseAudioFocus()
+                    runOnUiThread {
+                        methodChannel?.invokeMethod("onDone", null)
+                    }
                 }
             }
-        }
+        )
     }
 
-    private fun playSingleUtterance(text: String, onDone: () -> Unit) {
+    private fun playSingleUtterance(
+        text: String,
+        onStarted: (durationMs: Int) -> Unit = {},
+        onDone: () -> Unit
+    ) {
         if (cancelCurrentSpeech) return
 
         // 1. Check if bundled asset exists for this utterance (single word)
         val clean = text.lowercase().replace(Regex("[^a-z0-9àâäéèêëîïôöùûüç]"), "").trim()
         if (clean.isNotEmpty() && !clean.contains(" ")) {
-            if (tryPlayBundledAsset(clean, onDone)) {
+            if (tryPlayBundledAsset(clean, onStarted, onDone)) {
                 return
             }
         }
@@ -187,7 +216,7 @@ class MainActivity : FlutterActivity() {
 
         if (cachedFile.exists() && cachedFile.length() > 0) {
             Log.d(TAG, "Playing from cache: ${cachedFile.name} for '$text'")
-            playFileWithMediaPlayer(cachedFile, onDone)
+            playFileWithMediaPlayer(cachedFile, onStarted, onDone)
             return
         }
 
@@ -228,12 +257,12 @@ class MainActivity : FlutterActivity() {
 
             if (downloadSuccess && cachedFile.exists()) {
                 runOnUiThread {
-                    playFileWithMediaPlayer(cachedFile, onDone)
+                    playFileWithMediaPlayer(cachedFile, onStarted, onDone)
                 }
             } else {
                 // 4. Fallback to Android System TextToSpeech
                 runOnUiThread {
-                    fallbackToSystemTts(text, onDone)
+                    fallbackToSystemTts(text, onStarted, onDone)
                 }
             }
         }
@@ -241,7 +270,11 @@ class MainActivity : FlutterActivity() {
 
     // ── Asset Playback ─────────────────────────────────────────────────────────
 
-    private fun tryPlayBundledAsset(word: String, onDone: (() -> Unit)? = null): Boolean {
+    private fun tryPlayBundledAsset(
+        word: String,
+        onStarted: (durationMs: Int) -> Unit = {},
+        onDone: (() -> Unit)? = null
+    ): Boolean {
         val possibleNames = listOf(
             "flutter_assets/assets/audio/$word.mp3",
             "flutter_assets/assets/audio/${removeAccents(word)}.mp3"
@@ -250,7 +283,7 @@ class MainActivity : FlutterActivity() {
         for (assetPath in possibleNames) {
             try {
                 val afd = assets.openFd(assetPath)
-                playAfdWithMediaPlayer(afd, onDone)
+                playAfdWithMediaPlayer(afd, onStarted, onDone)
                 return true
             } catch (_: Exception) {
                 // Try reading InputStream
@@ -259,7 +292,7 @@ class MainActivity : FlutterActivity() {
                     val tempFile = File(cacheDir, "temp_asset_$word.mp3")
                     tempFile.outputStream().use { stream.copyTo(it) }
                     stream.close()
-                    playFileWithMediaPlayer(tempFile, onDone)
+                    playFileWithMediaPlayer(tempFile, onStarted, onDone)
                     return true
                 } catch (_: Exception) {}
             }
@@ -267,7 +300,11 @@ class MainActivity : FlutterActivity() {
         return false
     }
 
-    private fun playAfdWithMediaPlayer(afd: AssetFileDescriptor, onDone: (() -> Unit)?) {
+    private fun playAfdWithMediaPlayer(
+        afd: AssetFileDescriptor,
+        onStarted: (durationMs: Int) -> Unit = {},
+        onDone: (() -> Unit)?
+    ) {
         try {
             stopMediaPlayerOnly()
             mediaPlayer = MediaPlayer().apply {
@@ -282,9 +319,8 @@ class MainActivity : FlutterActivity() {
 
                 setOnPreparedListener { mp ->
                     mp.start()
-                    runOnUiThread {
-                        methodChannel?.invokeMethod("onStart", null)
-                    }
+                    val dur = try { mp.duration } catch (_: Exception) { -1 }
+                    onStarted.invoke(dur)
                 }
                 setOnCompletionListener {
                     if (onDone != null) {
@@ -326,7 +362,11 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun playFileWithMediaPlayer(file: File, onDone: (() -> Unit)?) {
+    private fun playFileWithMediaPlayer(
+        file: File,
+        onStarted: (durationMs: Int) -> Unit = {},
+        onDone: (() -> Unit)?
+    ) {
         try {
             stopMediaPlayerOnly()
             mediaPlayer = MediaPlayer().apply {
@@ -340,9 +380,8 @@ class MainActivity : FlutterActivity() {
 
                 setOnPreparedListener { mp ->
                     mp.start()
-                    runOnUiThread {
-                        methodChannel?.invokeMethod("onStart", null)
-                    }
+                    val dur = try { mp.duration } catch (_: Exception) { -1 }
+                    onStarted.invoke(dur)
                 }
                 setOnCompletionListener {
                     if (onDone != null) {
@@ -386,7 +425,11 @@ class MainActivity : FlutterActivity() {
 
     // ── System TextToSpeech Fallback ───────────────────────────────────────────
 
-    private fun fallbackToSystemTts(text: String, onDone: () -> Unit) {
+    private fun fallbackToSystemTts(
+        text: String,
+        onStarted: (durationMs: Int) -> Unit = {},
+        onDone: () -> Unit
+    ) {
         val engine = tts
         if (engine == null || !ttsReady) {
             Log.e(TAG, "System TTS fallback not available")
@@ -404,9 +447,7 @@ class MainActivity : FlutterActivity() {
         // Utterance listener for sequence continuation
         engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(id: String?) {
-                runOnUiThread {
-                    methodChannel?.invokeMethod("onStart", null)
-                }
+                onStarted.invoke(-1)
             }
             override fun onDone(id: String?) {
                 runOnUiThread {

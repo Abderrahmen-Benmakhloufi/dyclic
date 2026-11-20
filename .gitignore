@@ -25,15 +25,20 @@ app/android/**/GeneratedPluginRegistrant.java
 
 # Web
 app/build/web/
+web_app_dist/
 
 # Binaries
 *.apk
+*.pdf
+demo_audio_base64.txt
+demo_french_speech.mp3
 
 # Supabase
 supabase/.temp/
 supabase/.branches/
 
 # IDE & OS
+.kilo/
 .idea/
 .vscode/
 *.iml

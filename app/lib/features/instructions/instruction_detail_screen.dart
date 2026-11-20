@@ -145,14 +145,23 @@ class _InstructionDetailScreenState
           tooltip: 'Retour',
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
-          'Explication pas à pas',
-          style: TextStyle(
-            color: palette.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            fontFamily: fontFamily,
-          ),
+        title: Row(
+          children: [
+            AppAssetIcon(
+              assetPath: AppUiAssets.qtypeComprehension,
+              size: 26,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Explication pas à pas',
+              style: TextStyle(
+                color: palette.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: fontFamily,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(

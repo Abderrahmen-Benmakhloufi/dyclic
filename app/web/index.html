@@ -3,6 +3,24 @@
 <head>
   <base href="$FLUTTER_BASE_HREF">
 
+  <!-- Immediate purge of stale service workers and caches from older deployments -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (var i = 0; i < registrations.length; i++) {
+          registrations[i].unregister();
+        }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function (names) {
+        for (var i = 0; i < names.length; i++) {
+          caches.delete(names[i]);
+        }
+      });
+    }
+  </script>
+
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -11,13 +29,16 @@
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Lecture Aide">
+  <meta name="apple-mobile-web-app-title" content="AideLecture">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Google Sign-In GIS Client ID -->
+  <meta name="google-signin-client_id" content="325703599741-45k9eqdd29urb8cidh5q1u64flcp5if6.apps.googleusercontent.com">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>Lecture Aide</title>
+  <title>AideLecture</title>
   <link rel="manifest" href="manifest.json">
 
   <style>
@@ -92,22 +113,34 @@
   <!-- Warm welcoming splash screen shown instantly while Flutter initializes -->
   <div id="loading-splash">
     <div class="splash-icon">📖</div>
-    <div class="splash-title">Lecture Aide</div>
+    <div class="splash-title">AideLecture</div>
     <div class="splash-subtitle">Préparation de ton espace de travail...</div>
     <div class="spinner"></div>
   </div>
 
   <script>
+    // 0. Auto-clean legacy service workers to prevent cached white-screens from older builds
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (var i = 0; i < registrations.length; i++) {
+          var reg = registrations[i];
+          if (reg.active && reg.active.scriptURL && reg.active.scriptURL.indexOf('v=20261120') === -1) {
+            reg.unregister();
+          }
+        }
+      });
+    }
+
     function dismissSplash() {
       var splash = document.getElementById('loading-splash');
-      if (splash) {
+      if (splash && splash.style.opacity !== '0') {
         splash.style.pointerEvents = 'none';
         splash.style.opacity = '0';
         setTimeout(function () {
           if (splash && splash.parentNode) {
             splash.parentNode.removeChild(splash);
           }
-        }, 350);
+        }, 400);
       }
     }
 
@@ -120,97 +153,294 @@
       checkCount++;
       if (document.querySelector('flt-glass-pane') ||
           document.querySelector('flutter-view') ||
-          document.querySelector('canvas') ||
-          (window._flutter && window._flutter.loader && window._flutter.loader._scriptLoaded)) {
+          document.querySelector('canvas')) {
         clearInterval(checkInterval);
-        setTimeout(dismissSplash, 300);
-      } else if (checkCount > 15) {
-        // After 3 seconds max, automatically dismiss
-        clearInterval(checkInterval);
-        dismissSplash();
+        setTimeout(dismissSplash, 200);
       }
-    }, 200);
+    }, 250);
 
-    // 3. Absolute safety timeout: Guarantee dismissal after 2.5 seconds
-    setTimeout(dismissSplash, 2500);
+    // 3. User assistance if network is very slow (over 12 seconds)
+    setTimeout(function () {
+      var splash = document.getElementById('loading-splash');
+      if (splash) {
+        var sub = splash.querySelector('.splash-subtitle');
+        if (sub) {
+          sub.innerHTML = 'Chargement des ressources en cours...<br><a href="javascript:location.reload(true)" style="color:#6B5B95;font-weight:700;text-decoration:underline;margin-top:10px;display:inline-block;">Recharger si bloqué</a>';
+        }
+      }
+    }, 12000);
 
-    // 4. Instant click/touch dismiss
+    // 4. Instant click/touch dismiss if already rendered
     var s = document.getElementById('loading-splash');
     if (s) {
-      s.addEventListener('click', dismissSplash);
-      s.addEventListener('touchstart', dismissSplash, { passive: true });
+      s.addEventListener('click', function () {
+        if (document.querySelector('flt-glass-pane') || document.querySelector('flutter-view') || document.querySelector('canvas')) {
+          dismissSplash();
+        }
+      });
     }
 
-    // 5. On-screen error diagnostic (displays any uncaught browser/network errors)
-    function showBrowserError(msg) {
-      dismissSplash();
-      var box = document.getElementById('debug-error-banner');
-      if (!box) {
-        box = document.createElement('div');
-        box.id = 'debug-error-banner';
-        box.style.position = 'fixed';
-        box.style.bottom = '20px';
-        box.style.left = '20px';
-        box.style.right = '20px';
-        box.style.backgroundColor = '#FFEBEE';
-        box.style.color = '#B71C1C';
-        box.style.border = '1.5px solid #EF5350';
-        box.style.padding = '14px 18px';
-        box.style.borderRadius = '12px';
-        box.style.boxShadow = '0 8px 24px rgba(0,0,0,0.18)';
-        box.style.fontFamily = 'monospace';
-        box.style.fontSize = '13px';
-        box.style.zIndex = '999999999';
-        box.style.lineHeight = '1.5';
-        document.body.appendChild(box);
-      }
-      box.innerHTML = '⚠️ <b>Erreur de chargement:</b><br>' + msg;
-    }
-
+    // 5. Console logging for diagnostics
     window.addEventListener('error', function (e) {
-      showBrowserError(e.message || (e.error && e.error.message) || e.toString());
+      console.warn('App diagnostic:', e.message || e);
     });
 
     window.addEventListener('unhandledrejection', function (e) {
-      showBrowserError(e.reason ? (e.reason.message || e.reason.toString()) : e.toString());
+      console.warn('Unhandled promise rejection:', e.reason);
     });
-    // 6. Web Speech API robust helpers (TTS & Microphone)
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.onvoiceschanged = function() {
-        window.speechSynthesis.getVoices();
-      };
-      window.speechSynthesis.getVoices();
-    }
+    // 6. Web Speech API robust helpers (TTS for iOS Safari, Chrome, Edge, Firefox)
+    window.AideLectureWebTts = {
+      isSpeaking: false,
+      _queue: [],
+      _currentIndex: 0,
+      _cancelled: false,
+      _frenchVoices: [],
 
-    window.playFrenchTts = function(text, rate) {
-      if (!('speechSynthesis' in window)) return;
-      window.speechSynthesis.cancel();
-      setTimeout(function() {
-        try {
-          var u = new SpeechSynthesisUtterance(text);
-          u.lang = 'fr-FR';
-          u.rate = rate || 0.9;
-          var voices = window.speechSynthesis.getVoices();
-          for (var i = 0; i < voices.length; i++) {
-            if (voices[i].lang && voices[i].lang.toLowerCase().startsWith('fr')) {
-              u.voice = voices[i];
-              break;
+      // Callbacks passed from Dart
+      _onStartCb: null,
+      _onSentenceStartCb: null,
+      _onSentenceDoneCb: null,
+      _onDoneCb: null,
+      _onErrorCb: null,
+
+      setCallbacks: function(onStart, onSentenceStart, onSentenceDone, onDone, onError) {
+        this._onStartCb = onStart;
+        this._onSentenceStartCb = onSentenceStart;
+        this._onSentenceDoneCb = onSentenceDone;
+        this._onDoneCb = onDone;
+        this._onErrorCb = onError;
+      },
+
+      initVoices: function() {
+        if (!('speechSynthesis' in window)) return;
+        var self = this;
+        function update() {
+          try {
+            var all = window.speechSynthesis.getVoices() || [];
+            self._frenchVoices = all.filter(function(v) {
+              return v.lang && v.lang.toLowerCase().replace('_', '-').startsWith('fr');
+            });
+            if (self._frenchVoices.length > 0) {
+              console.log('AideLectureWebTts: ' + self._frenchVoices.length + ' French voice(s) ready');
+            }
+          } catch (_) {}
+        }
+        update();
+        if (typeof window.speechSynthesis.onvoiceschanged !== 'undefined') {
+          window.speechSynthesis.onvoiceschanged = update;
+        }
+      },
+
+      getBestFrenchVoice: function() {
+        if (!this._frenchVoices || this._frenchVoices.length === 0) {
+          this.initVoices();
+        }
+        if (!this._frenchVoices || this._frenchVoices.length === 0) return null;
+
+        // Preferred French voice hierarchy for clear educational reading on iOS / Web
+        var preferences = ['thomas', 'siri', 'audrey', 'aurelie', 'amelie', 'hortense', 'julie', 'google français', 'natural', 'fr-fr', 'fr'];
+        for (var p = 0; p < preferences.length; p++) {
+          for (var i = 0; i < this._frenchVoices.length; i++) {
+            var v = this._frenchVoices[i];
+            if ((v.name || '').toLowerCase().indexOf(preferences[p]) !== -1 ||
+                (v.lang || '').toLowerCase().indexOf(preferences[p]) !== -1) {
+              return v;
             }
           }
-          window.speechSynthesis.speak(u);
-        } catch (err) {
-          console.warn('TTS playback error:', err);
         }
-      }, 35);
-    };
+        return this._frenchVoices.find(function(v) { return v.default; }) || this._frenchVoices[0];
+      },
 
-    window.stopFrenchTts = function() {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
+      isReady: function() {
+        return ('speechSynthesis' in window);
+      },
+
+      getLanguages: function() {
+        if (!this._frenchVoices || this._frenchVoices.length === 0) this.initVoices();
+        var langs = [];
+        for (var i = 0; i < this._frenchVoices.length; i++) {
+          langs.push(this._frenchVoices[i].lang + ' (' + this._frenchVoices[i].name + ')');
+        }
+        return langs.length > 0 ? langs : ['fr-FR'];
+      },
+
+      speak: function(text, sentencesList, rate) {
+        var self = this;
+        // Stop any active utterance before starting new speech
+        self._cancelled = true;
+        self.isSpeaking = false;
+        if ('speechSynthesis' in window && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) {
+          try { window.speechSynthesis.cancel(); } catch (_) {}
+        }
+
+        var sentences = [];
+        if (sentencesList && Array.isArray(sentencesList) && sentencesList.length > 0) {
+          sentences = sentencesList;
+        } else if (text && text.trim().length > 0) {
+          sentences = text.trim().split(/(?<=[.!?;\n])\s+/).filter(function(s) { return s.trim().length > 0; });
+          if (sentences.length === 0) sentences = [text.trim()];
+        } else {
+          return;
+        }
+
+        self._queue = sentences;
+        self._currentIndex = 0;
+        self._cancelled = false;
+        self.isSpeaking = true;
+
+        // Small 30ms delay to let browser finish any cancellation before speaking
+        setTimeout(function() {
+          if (!self._cancelled) {
+            self._playNextSentence(rate || 0.92);
+          }
+        }, 30);
+      },
+
+      _playNextSentence: function(rate) {
+        var self = this;
+        if (self._cancelled || self._currentIndex >= self._queue.length) {
+          self.isSpeaking = false;
+          if (typeof self._onDoneCb === 'function') {
+            try { self._onDoneCb(); } catch (_) {}
+          }
+          return;
+        }
+
+        var index = self._currentIndex;
+        var sentence = self._queue[index];
+
+        if (!('speechSynthesis' in window)) {
+          console.warn('SpeechSynthesis not available in this browser');
+          self.isSpeaking = false;
+          if (typeof self._onErrorCb === 'function') {
+            try { self._onErrorCb('Synthèse vocale non supportée par ce navigateur'); } catch (_) {}
+          }
+          return;
+        }
+
+        try {
+          var u = new SpeechSynthesisUtterance(sentence);
+          u.lang = 'fr-FR';
+          u.rate = rate || 0.92;
+          u.pitch = 1.0;
+
+          var voice = self.getBestFrenchVoice();
+          if (voice) {
+            u.voice = voice;
+            if (voice.lang) u.lang = voice.lang;
+          }
+
+          var estimatedMs = Math.max(600, Math.round(sentence.length * 65 / (rate || 0.92)));
+
+          u.onstart = function() {
+            if (self._cancelled) return;
+            if (index === 0 && typeof self._onStartCb === 'function') {
+              try { self._onStartCb(); } catch (_) {}
+            }
+            if (typeof self._onSentenceStartCb === 'function') {
+              try { self._onSentenceStartCb(index, estimatedMs); } catch (_) {}
+            }
+          };
+
+          u.onend = function() {
+            if (self._cancelled) return;
+            if (typeof self._onSentenceDoneCb === 'function') {
+              try { self._onSentenceDoneCb(index); } catch (_) {}
+            }
+            self._currentIndex++;
+            setTimeout(function() {
+              self._playNextSentence(rate);
+            }, 220);
+          };
+
+          u.onerror = function(err) {
+            console.warn('SpeechSynthesis sentence ' + index + ' error:', err);
+            if (self._cancelled) return;
+            if (typeof self._onSentenceDoneCb === 'function') {
+              try { self._onSentenceDoneCb(index); } catch (_) {}
+            }
+            self._currentIndex++;
+            setTimeout(function() {
+              self._playNextSentence(rate);
+            }, 80);
+          };
+
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
+
+          window.speechSynthesis.speak(u);
+        } catch (e) {
+          console.error('SpeechSynthesis exception:', e);
+          self.isSpeaking = false;
+          if (typeof self._onErrorCb === 'function') {
+            try { self._onErrorCb(e.toString()); } catch (_) {}
+          }
+        }
+      },
+
+      stop: function() {
+        this._cancelled = true;
+        this.isSpeaking = false;
+        this._queue = [];
+        if ('speechSynthesis' in window) {
+          try { window.speechSynthesis.cancel(); } catch (_) {}
+        }
+        if (typeof this._onDoneCb === 'function') {
+          try { this._onDoneCb(); } catch (_) {}
+        }
       }
     };
+
+    window.AideLectureWebTts.initVoices();
+
+    // Direct global functions called by Dart js_interop
+    window.aideLectureTtsSpeak = function(text, sentences, rate) {
+      if (window.AideLectureWebTts) {
+        window.AideLectureWebTts.speak(text, sentences, rate);
+      }
+    };
+    window.aideLectureTtsStop = function() {
+      if (window.AideLectureWebTts) {
+        window.AideLectureWebTts.stop();
+      }
+    };
+    window.aideLectureTtsIsReady = function() {
+      return window.AideLectureWebTts ? window.AideLectureWebTts.isReady() : false;
+    };
+    window.aideLectureTtsGetLanguages = function() {
+      return window.AideLectureWebTts ? window.AideLectureWebTts.getLanguages() : ['fr-FR'];
+    };
+    window.aideLectureTtsSetCallbacks = function(onStart, onSentenceStart, onSentenceDone, onDone, onError) {
+      if (window.AideLectureWebTts) {
+        window.AideLectureWebTts.setCallbacks(onStart, onSentenceStart, onSentenceDone, onDone, onError);
+      }
+    };
+
+    // Backward-compatibility aliases
+    window.playFrenchTts = function(text, rate) {
+      window.AideLectureWebTts.speak(text, null, rate);
+    };
+    window.stopFrenchTts = function() {
+      window.AideLectureWebTts.stop();
+    };
+
+    // Unlock iOS Safari / Mobile audio autoplay restrictions on user gesture
+    function unlockAudioForSafari() {
+      if ('speechSynthesis' in window && !window._ttsUnlocked) {
+        try {
+          var dummy = new SpeechSynthesisUtterance(' ');
+          dummy.volume = 0.01;
+          dummy.rate = 2;
+          window.speechSynthesis.speak(dummy);
+          window._ttsUnlocked = true;
+        } catch (_) {}
+      }
+    }
+    window.addEventListener('touchstart', unlockAudioForSafari, { once: true, passive: true });
+    window.addEventListener('click', unlockAudioForSafari, { once: true, passive: true });
   </script>
 
-  <script src="flutter_bootstrap.js?v=20261025" async></script>
+  <script src="flutter_bootstrap.js?v=20261120_v4" async></script>
 </body>
 </html>

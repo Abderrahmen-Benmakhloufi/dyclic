@@ -3,6 +3,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:image_picker/image_picker.dart';
 
 import '../theme/app_colors.dart';
+import '../widgets/app_asset_icon.dart';
 
 /// Centralized offline OCR service for scanning text from exam sheets or books
 /// using on-device Google ML Kit (100% offline, privacy-safe, zero network delay).
@@ -93,9 +94,16 @@ class _ImageSourceSheet extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            const Center(
+              child: AppAssetIcon(
+                assetPath: AppUiAssets.scannerCamera,
+                size: 44,
+              ),
+            ),
+            const SizedBox(height: 8),
             const Text(
-              'Scanner un texte 📷',
+              'Scanner un texte',
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
@@ -117,6 +125,7 @@ class _ImageSourceSheet extends StatelessWidget {
               children: [
                 Expanded(
                   child: _SourceButton(
+                    assetPath: AppUiAssets.scannerCamera,
                     icon: Icons.camera_alt_rounded,
                     label: 'Appareil photo',
                     color: AppColors.primary,
@@ -143,12 +152,14 @@ class _ImageSourceSheet extends StatelessWidget {
 
 class _SourceButton extends StatelessWidget {
   const _SourceButton({
+    this.assetPath,
     required this.icon,
     required this.label,
     required this.color,
     required this.onTap,
   });
 
+  final String? assetPath;
   final IconData icon;
   final String label;
   final Color color;
@@ -171,7 +182,9 @@ class _SourceButton extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(icon, size: 28, color: color),
+            assetPath != null
+                ? AppAssetIcon(assetPath: assetPath!, size: 28)
+                : Icon(icon, size: 28, color: color),
             const SizedBox(height: 8),
             Text(
               label,

@@ -4,9 +4,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class GeminiConfig {
   GeminiConfig._();
 
-  /// The Gemini API key (read from GEMINI_API_KEY in .env).
+  /// The Gemini API key (read from GEMINI_API_KEY in .env or compile-time environment).
   static String get apiKey {
-    final key = dotenv.env['GEMINI_API_KEY'] ?? '';
+    final key = dotenv.env['GEMINI_API_KEY'] ??
+        const String.fromEnvironment('GEMINI_API_KEY');
     if (key.isEmpty || key == 'YOUR_API_KEY_HERE') {
       throw StateError(
         'GEMINI_API_KEY is not set. Add it to app/.env as:\n'

@@ -1,6 +1,6 @@
 {
   "@@locale": "fr",
-  "appTitle": "Aide à la Lecture et à l'Écriture",
+  "appTitle": "AideLecture",
   "@appTitle": {
     "description": "Titre principal de l'application"
   },
@@ -15,16 +15,16 @@
   "onboardingConfirmButton": "Commencer l'aventure",
 
   "levelPrimaireTitle": "Primaire",
-  "levelPrimaireSubtitle": "5e Année Primaire (5e AP)",
-  "levelPrimaireDesc": "Phrases très courtes, repères visuels clairs et vocabulaire guidé.",
+  "levelPrimaireSubtitle": "École primaire (Consolidation)",
+  "levelPrimaireDesc": "Phrases courtes, repères visuels clairs et vocabulaire guidé.",
 
-  "levelMoyenTitle": "Moyen (Collège)",
-  "levelMoyenSubtitle": "1e à 4e Année Moyenne (1e-4e AM)",
-  "levelMoyenDesc": "Situations d'intégration, explications pas à pas et enrichissement du vocabulaire.",
+  "levelMoyenTitle": "Moyen",
+  "levelMoyenSubtitle": "Collège / Enseignement moyen (BEM / Brevet)",
+  "levelMoyenDesc": "Situations complexes, explications pas à pas et préparation au Brevet.",
 
-  "levelSecondaireTitle": "Secondaire (Lycée)",
-  "levelSecondaireSubtitle": "1e à 3e Année Secondaire (1e-3e AS)",
-  "levelSecondaireDesc": "Textes plus denses, démarche argumentative et réflexion méthodique.",
+  "levelSecondaireTitle": "Lycée",
+  "levelSecondaireSubtitle": "2nde – 1ère – Terminale (Bac)",
+  "levelSecondaireDesc": "Textes denses et argumentatifs, démarche réflexive et préparation au Bac.",
 
   "currentLevelBadge": "Niveau : {level}",
   "@currentLevelBadge": {

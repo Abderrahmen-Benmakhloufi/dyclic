@@ -1,3 +1,4 @@
+﻿import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/gestures.dart';
@@ -11,8 +12,12 @@ import '../../core/services/ocr_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/reading_palette.dart';
 import '../../core/tts/tts_service.dart';
+import '../../core/widgets/app_asset_icon.dart';
 import '../decoding/decoding_screen.dart';
+import '../instructions/instruction_ai_screen.dart';
 import '../reading_settings/reading_settings_sheet.dart';
+import '../simplify/simplify_screen.dart';
+import '../tts/tts_screen.dart';
 import 'services/french_phoneme_service.dart';
 import 'services/french_silent_letter_service.dart';
 import 'services/french_syllable_service.dart';
@@ -27,7 +32,12 @@ enum SyllableVisualMode {
 }
 
 class ReadingSupportScreen extends ConsumerStatefulWidget {
-  const ReadingSupportScreen({super.key});
+  final String? initialText;
+
+  const ReadingSupportScreen({
+    super.key,
+    this.initialText,
+  });
 
   @override
   ConsumerState<ReadingSupportScreen> createState() =>
@@ -77,16 +87,27 @@ class _ReadingSupportScreenState extends ConsumerState<ReadingSupportScreen> {
   /// List of gesture recognizers created for clickable words, cleanly disposed on each build
   final List<TapGestureRecognizer> _wordRecognizers = [];
 
-  /// Index of the word currently being spoken via word tap (for visual highlight)
+  /// Index of the word currently being spoken via word tap or sequence (for visual highlight)
   int? _speakingWordIndex;
+  Timer? _sequenceTimer;
+  StreamSubscription<TtsSentenceEvent>? _sentenceStartSub;
+  StreamSubscription<int>? _sentenceDoneSub;
+  Map<int, List<_ReadingWordStep>> _sentenceWordMap = {};
 
   late final TtsService _ttsService;
 
   @override
   void initState() {
     super.initState();
+    if (widget.initialText != null && widget.initialText!.trim().isNotEmpty) {
+      _textController.text = widget.initialText!.trim();
+      _isReadingMode = true;
+    }
     _ttsService = ref.read(ttsServiceProvider);
     _ttsService.isPlayingNotifier.addListener(_onTtsStateChanged);
+    _sentenceStartSub =
+        _ttsService.sentenceStartStream.listen(_onSentenceStart);
+    _sentenceDoneSub = _ttsService.sentenceDoneStream.listen(_onSentenceDone);
     _inputFocusNode.addListener(_onInputFocusChanged);
     _textController.addListener(() {
       if (mounted) setState(() {});
@@ -157,14 +178,22 @@ class _ReadingSupportScreenState extends ConsumerState<ReadingSupportScreen> {
 
   void _onTtsStateChanged() {
     if (mounted) {
+      final playing = _ttsService.isPlayingNotifier.value;
       setState(() {
-        _isPlayingAudio = _ttsService.isPlayingNotifier.value;
+        _isPlayingAudio = playing;
+        if (!playing) {
+          _sequenceTimer?.cancel();
+          _speakingWordIndex = null;
+        }
       });
     }
   }
 
   @override
   void dispose() {
+    _sentenceStartSub?.cancel();
+    _sentenceDoneSub?.cancel();
+    _sequenceTimer?.cancel();
     _disposeWordRecognizers();
     _ttsService.isPlayingNotifier.removeListener(_onTtsStateChanged);
     if (_isPlayingAudio) {
@@ -191,6 +220,7 @@ class _ReadingSupportScreenState extends ConsumerState<ReadingSupportScreen> {
         word.replaceAll(RegExp(r"[^\p{L}\p{M}\-']", unicode: true), '').trim();
     if (clean.isEmpty) return;
 
+    _sequenceTimer?.cancel();
     if (mounted) {
       setState(() {
         _speakingWordIndex = wordIndex;
@@ -212,10 +242,182 @@ class _ReadingSupportScreenState extends ConsumerState<ReadingSupportScreen> {
     }
   }
 
+  void _onSentenceStart(TtsSentenceEvent event) {
+    if (!mounted || !_isPlayingAudio) return;
+
+    final words = _sentenceWordMap[event.sentenceIndex];
+    if (words == null || words.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _speakingWordIndex = null;
+        });
+      }
+      return;
+    }
+
+    _startSentenceWordSequence(words, event.durationMs);
+  }
+
+  void _onSentenceDone(int sentenceIndex) {
+    if (!mounted) return;
+    _sequenceTimer?.cancel();
+    setState(() {
+      _speakingWordIndex = null;
+    });
+  }
+
+  /// Estimates the base duration of a French word. Inter-sentence pause is handled
+  /// naturally by waiting for native sentence start events.
+  int _estimateWordDurationMs(String word, String trailingPunctuation) {
+    int baseMs;
+    final len = word.length;
+    if (len <= 3) {
+      baseMs = 240;
+    } else if (len <= 5) {
+      baseMs = 320;
+    } else if (len <= 7) {
+      baseMs = 400;
+    } else if (len <= 9) {
+      baseMs = 480;
+    } else {
+      baseMs = 480 + (len - 9) * 45;
+    }
+
+    if (trailingPunctuation.contains(',') ||
+        trailingPunctuation.contains(';') ||
+        trailingPunctuation.contains(':')) {
+      baseMs += 180;
+    }
+
+    return baseMs;
+  }
+
+  /// Extracts sentences and maps each word token to its sentence index and duration metrics.
+  ({
+    List<String> sentences,
+    List<_ReadingWordStep> words,
+    Map<int, List<_ReadingWordStep>> sentenceWordMap,
+  }) _extractSentenceAndWordData(String text) {
+    final rawSentences = <String>[];
+    final sentenceRegex =
+        RegExp(r'[^.!?;\n]+(?:[.!?;\n]+|$)', multiLine: true);
+    for (final m in sentenceRegex.allMatches(text)) {
+      final s = m.group(0)?.trim() ?? '';
+      if (s.isNotEmpty) {
+        rawSentences.add(s);
+      }
+    }
+    if (rawSentences.isEmpty && text.trim().isNotEmpty) {
+      rawSentences.add(text.trim());
+    }
+
+    final allWords = <_ReadingWordStep>[];
+    final sentenceWordMap = <int, List<_ReadingWordStep>>{};
+
+    final wordPattern =
+        RegExp(r"([a-zA-ZÀ-ÿ]+(?:['’][a-zA-ZÀ-ÿ]+)?|[^a-zA-ZÀ-ÿ]+)");
+    final matches = wordPattern.allMatches(text).toList();
+
+    int currentSentenceIdx = 0;
+    int currentSentenceEndOffset = rawSentences.isNotEmpty
+        ? (text.indexOf(rawSentences[0]) + rawSentences[0].length)
+        : text.length;
+
+    int globalWordIdx = 0;
+    for (int i = 0; i < matches.length; i++) {
+      final match = matches[i];
+      final token = match.group(0) ?? '';
+      if (RegExp(r"[a-zA-ZÀ-ÿ]").hasMatch(token)) {
+        while (currentSentenceIdx < rawSentences.length - 1 &&
+            match.start >= currentSentenceEndOffset) {
+          currentSentenceIdx++;
+          final nextSentence = rawSentences[currentSentenceIdx];
+          final nextIdx = text.indexOf(nextSentence, match.start);
+          currentSentenceEndOffset =
+              (nextIdx >= 0 ? nextIdx : match.start) + nextSentence.length;
+        }
+
+        String trailing = '';
+        if (i + 1 < matches.length) {
+          final nextToken = matches[i + 1].group(0) ?? '';
+          if (!RegExp(r"[a-zA-ZÀ-ÿ]").hasMatch(nextToken)) {
+            trailing = nextToken;
+          }
+        }
+
+        final duration = _estimateWordDurationMs(token, trailing);
+        final item = _ReadingWordStep(
+          index: globalWordIdx++,
+          word: token,
+          durationMs: duration,
+          sentenceIndex: currentSentenceIdx,
+        );
+        allWords.add(item);
+        sentenceWordMap.putIfAbsent(currentSentenceIdx, () => []).add(item);
+      }
+    }
+
+    return (
+      sentences: rawSentences,
+      words: allWords,
+      sentenceWordMap: sentenceWordMap,
+    );
+  }
+
+  /// Highlights words sequentially within the currently spoken sentence.
+  void _startSentenceWordSequence(
+      List<_ReadingWordStep> words, int totalDurationMs) {
+    _sequenceTimer?.cancel();
+
+    final List<int> durations = [];
+    if (totalDurationMs > 0 && words.isNotEmpty) {
+      final totalWeight = words.fold<int>(0, (sum, w) => sum + w.durationMs);
+      for (final w in words) {
+        final dur = totalWeight > 0
+            ? ((totalDurationMs * w.durationMs) / totalWeight).round()
+            : (totalDurationMs / words.length).round();
+        durations.add(dur.clamp(160, 2500));
+      }
+    } else {
+      for (final w in words) {
+        durations.add(w.durationMs);
+      }
+    }
+
+    int step = 0;
+    void stepNext() {
+      if (!mounted || !_isPlayingAudio || step >= words.length) {
+        if (mounted) {
+          setState(() {
+            _speakingWordIndex = null;
+          });
+        }
+        return;
+      }
+
+      final item = words[step];
+      final dur = durations[step];
+      setState(() {
+        _speakingWordIndex = item.index;
+      });
+
+      step++;
+      _sequenceTimer = Timer(Duration(milliseconds: dur), () {
+        stepNext();
+      });
+    }
+
+    stepNext();
+  }
+
   Future<void> _toggleAudioReading() async {
     final tts = ref.read(ttsServiceProvider);
+    _sequenceTimer?.cancel();
     if (_isPlayingAudio) {
-      setState(() => _isPlayingAudio = false);
+      setState(() {
+        _isPlayingAudio = false;
+        _speakingWordIndex = null;
+      });
       await tts.stop();
     } else {
       final text = _textController.text.trim();
@@ -229,11 +431,16 @@ class _ReadingSupportScreenState extends ConsumerState<ReadingSupportScreen> {
         );
         return;
       }
+
+      final data = _extractSentenceAndWordData(text);
+      _sentenceWordMap = data.sentenceWordMap;
+
       setState(() {
         _isPlayingAudio = true;
-        _speakingWordIndex = null;
+        _speakingWordIndex = null; // Do not highlight prematurely before speech starts
       });
-      await tts.speakText(text);
+
+      await tts.speakText(text, sentences: data.sentences);
     }
   }
 
@@ -364,64 +571,81 @@ class _ReadingSupportScreenState extends ConsumerState<ReadingSupportScreen> {
             }
           },
         ),
-        title: _isReadingMode
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Lecture adaptée',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                  ),
-                  Row(
+        title: Row(
+          children: [
+            const Hero(
+              tag: 'hero_${AppUiAssets.featReading}',
+              child: AppAssetIcon(
+                assetPath: AppUiAssets.featReading,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Flexible(child: _isReadingMode
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: const BoxDecoration(
-                          color: AppColors.successGreen,
-                          shape: BoxShape.circle,
-                        ),
+                      const Text(
+                        'Lecture adaptée',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Confort actif',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: palette.textSecondary,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: AppColors.successGreen,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Confort actif',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: palette.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                ],
-              )
-            : const Text('M’aider à lire'),
+                  )
+                : const Text('M’aider à lire')),
+          ],
+        ),
         titleSpacing: 0,
         actions: [
-          if (!_isReadingMode)
-            IconButton(
-              icon: Icon(
-                _isPlayingAudio
-                    ? Icons.stop_circle_rounded
-                    : Icons.volume_up_rounded,
-                color: _isPlayingAudio ? AppColors.errorRed : palette.primary,
-                size: 26,
-              ),
-              tooltip: _isPlayingAudio ? 'Arrêter la lecture' : 'Écouter le texte',
-              onPressed: _toggleAudioReading,
-            ),
           IconButton(
-            icon: const Icon(Icons.spellcheck_rounded),
+            icon: Icon(
+              _isPlayingAudio
+                  ? Icons.stop_circle_rounded
+                  : Icons.volume_up_rounded,
+              color: _isPlayingAudio ? AppColors.errorRed : palette.primary,
+              size: 22,
+            ),
+            tooltip: _isPlayingAudio ? 'Arrêter la lecture' : 'Écouter le texte',
+            onPressed: _toggleAudioReading,
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+          ),
+          IconButton(
+            icon: const Icon(Icons.spellcheck_rounded, size: 22),
             tooltip: 'Aide au décodage',
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 6),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const DecodingScreen()),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.tune_rounded),
+            icon: const Icon(Icons.tune_rounded, size: 22),
             tooltip: 'Réglages de lecture',
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 6),
             onPressed: () {
               if (_isReadingMode && _readingTextScrollController.hasClients) {
                 _readingTextScrollController.animateTo(
@@ -436,7 +660,7 @@ class _ReadingSupportScreenState extends ConsumerState<ReadingSupportScreen> {
               );
             },
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
         ],
       ),
       body: SafeArea(
@@ -808,7 +1032,155 @@ class _ReadingSupportScreenState extends ConsumerState<ReadingSupportScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 20),
+
+          // ── Section : Boîte à outils de lecture ─────────────────
+          Row(
+            children: [
+              Text(
+                'Boîte à outils de lecture',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13.5,
+                  color: palette.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Divider(
+                  color: palette.border,
+                  thickness: 1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          _buildLectureToolCard(
+            palette: palette,
+            assetPath: AppUiAssets.featDecoding,
+            fallbackEmoji: '🔤',
+            title: 'Aide au décodage & Quiz',
+            subtitle: 'Découvrir les sons, les lettres et s’entraîner',
+            iconColor: const Color(0xFF8E24AA),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DecodingScreen()),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildLectureToolCard(
+            palette: palette,
+            assetPath: AppUiAssets.featSimplify,
+            fallbackEmoji: '📝',
+            title: 'Simplifier le texte',
+            subtitle: 'Rendre un texte plus court et facile à comprendre',
+            iconColor: const Color(0xFFE65100),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SimplifyScreen()),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildLectureToolCard(
+            palette: palette,
+            assetPath: AppUiAssets.featTts,
+            fallbackEmoji: '🔊',
+            title: 'Écouter le texte',
+            subtitle: 'Synthèse vocale mot à mot avec surlignage',
+            iconColor: const Color(0xFF1976D2),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const TtsScreen()),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildLectureToolCard(
+            palette: palette,
+            assetPath: AppUiAssets.featInstructions,
+            fallbackEmoji: '💡',
+            title: 'Expliquer une consigne',
+            subtitle: 'Décortiquer une consigne de lecture ou un énoncé pas à pas',
+            iconColor: const Color(0xFF00897B),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const InstructionAiScreen()),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLectureToolCard({
+    required ReadingPalette palette,
+    required String assetPath,
+    required String fallbackEmoji,
+    required String title,
+    required String subtitle,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: palette.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: palette.border),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: iconColor.withAlpha(20),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: AppAssetIcon(
+                  assetPath: assetPath,
+                  size: 24,
+                  fallbackEmoji: fallbackEmoji,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.bold,
+                        color: palette.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: palette.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: palette.textSecondary,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1860,7 +2232,6 @@ class _ReadingSupportScreenState extends ConsumerState<ReadingSupportScreen> {
               fontWeight: FontWeight.w500,
               color: palette.textSecondary,
             ),
-            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -2621,4 +2992,18 @@ class _LinedPaperPainter extends CustomPainter {
         oldDelegate.lineColor != lineColor ||
         oldDelegate.topOffset != topOffset;
   }
+}
+
+class _ReadingWordStep {
+  final int index;
+  final String word;
+  final int durationMs;
+  final int sentenceIndex;
+
+  const _ReadingWordStep({
+    required this.index,
+    required this.word,
+    required this.durationMs,
+    this.sentenceIndex = 0,
+  });
 }

@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/learner_profile/learner_profile_notifier.dart';
 import '../../core/theme/app_colors.dart';
-import '../home/home_screen.dart';
+import '../../core/widgets/app_asset_icon.dart';
+import '../home/main_navigation_scaffold.dart';
 import 'diagnostic_question_screen.dart';
 
 // ---------------------------------------------------------------------------
@@ -17,6 +18,17 @@ class DiagnosticGateScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: Navigator.of(context).canPop()
+          ? AppBar(
+              backgroundColor: AppColors.background,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+                tooltip: 'Retour',
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            )
+          : null,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -37,8 +49,13 @@ class DiagnosticGateScreen extends ConsumerWidget {
                           color: const Color(0xFFEDE9F6),
                           borderRadius: BorderRadius.circular(32),
                         ),
-                        child: const Center(
-                          child: Text('📖', style: TextStyle(fontSize: 56)),
+                        child: Center(
+                          child: Image.asset(
+                            AppUiAssets.appLogo,
+                            width: 76,
+                            height: 76,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                     ),
@@ -61,9 +78,20 @@ class DiagnosticGateScreen extends ConsumerWidget {
                             height: 1.6,
                           ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Ce test est uniquement informatif. Il ne constitue en aucun cas un diagnostic médical. Seul un professionnel de santé qualifié peut poser un diagnostic.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary.withValues(alpha: 0.8),
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     // ── Choice cards ───────────────────────────────────────────
                     _ChoiceCard(
+                      assetPath: AppUiAssets.clipboardQuiz,
                       emoji: '📋',
                       iconBg: const Color(0xFFEDE9F6),
                       iconColor: AppColors.primary,
@@ -71,14 +99,66 @@ class DiagnosticGateScreen extends ConsumerWidget {
                       cardBg: const Color(0xFFF5F2FC),
                       title: 'Oui, répondre au questionnaire',
                       subtitle: '23 questions · environ 5 minutes',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const DiagnosticQuestionScreen(),
-                        ),
-                      ),
+                      onTap: () async {
+                        final currentProfile = ref.read(learnerProfileProvider);
+                        if (currentProfile.isDiagnosticDone) {
+                          final proceed = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              title: const Row(
+                                children: [
+                                  Icon(Icons.warning_amber_rounded,
+                                      color: Colors.orange, size: 24),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Refaire le diagnostic ?',
+                                      style: TextStyle(fontSize: 16),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              content: const Text(
+                                'Tu as déjà un profil diagnostique enregistré. Si tu refais le questionnaire, tes réponses précédentes seront remplacées par les nouvelles.\n\nSouhaites-tu continuer ?',
+                                style: TextStyle(fontSize: 13.5, height: 1.45),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(false),
+                                  child: const Text('Annuler'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.of(ctx).pop(true),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  child: const Text('Oui, recommencer'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (proceed != true) return;
+                        }
+
+                        if (context.mounted) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const DiagnosticQuestionScreen(),
+                            ),
+                          );
+                        }
+                      },
                     ),
                     const SizedBox(height: 12),
                     _ChoiceCard(
+                      assetPath: AppUiAssets.rocketFast,
                       emoji: '🚀',
                       iconBg: const Color(0xFFEAF2EC),
                       iconColor: const Color(0xFF3C6B4E),
@@ -91,10 +171,11 @@ class DiagnosticGateScreen extends ConsumerWidget {
                             .read(learnerProfileProvider.notifier)
                             .skipDiagnostic();
                         if (context.mounted) {
-                          Navigator.of(context).pushReplacement(
+                          Navigator.of(context).pushAndRemoveUntil(
                             MaterialPageRoute(
-                              builder: (_) => const HomeScreen(),
+                              builder: (_) => const MainNavigationScaffold(),
                             ),
+                            (route) => false,
                           );
                         }
                       },
@@ -139,6 +220,7 @@ class DiagnosticGateScreen extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 class _ChoiceCard extends StatelessWidget {
+  final String? assetPath;
   final String emoji;
   final Color iconBg;
   final Color iconColor;
@@ -149,6 +231,7 @@ class _ChoiceCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const _ChoiceCard({
+    this.assetPath,
     required this.emoji,
     required this.iconBg,
     required this.iconColor,
@@ -185,7 +268,13 @@ class _ChoiceCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Center(
-                  child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                  child: assetPath != null
+                      ? AppAssetIcon(
+                          assetPath: assetPath!,
+                          size: 28,
+                          fallbackEmoji: emoji,
+                        )
+                      : Text(emoji, style: const TextStyle(fontSize: 22)),
                 ),
               ),
               const SizedBox(width: 14),

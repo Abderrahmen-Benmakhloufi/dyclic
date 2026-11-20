@@ -7,6 +7,8 @@ import '../../core/reading_settings/reading_settings_model.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/services/ocr_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/ai_exit_confirm_dialog.dart';
+import '../../core/widgets/ai_waiting_card.dart';
 import '../../core/widgets/app_asset_icon.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import 'instruction_detail_screen.dart';
@@ -49,6 +51,7 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
   bool _isLoading = false;
   bool _hasError = false;
   String _errorMessage = '';
+  bool _isCancelled = false;
 
   @override
   void initState() {
@@ -103,7 +106,7 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
       case LearnerLevel.secondaire:
         return 'Lycée';
       case LearnerLevel.moyen:
-        return 'Collège';
+        return 'Moyen';
     }
   }
 
@@ -197,6 +200,7 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
       _isLoading = true;
       _hasError = false;
       _errorMessage = '';
+      _isCancelled = false;
     });
 
     try {
@@ -206,6 +210,8 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
         learnerLevelCode: learnerCode,
         profile: profile,
       );
+
+      if (_isCancelled || !mounted) return;
 
       if (_cacheService != null) {
         await _cacheService!.saveInstruction(item);
@@ -221,21 +227,21 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
 
       await _openDetail(item);
     } on GeminiOfflineException catch (e) {
-      if (!mounted) return;
+      if (_isCancelled || !mounted) return;
       setState(() {
         _isLoading = false;
         _hasError = true;
         _errorMessage = e.message;
       });
     } on GeminiParseException catch (e) {
-      if (!mounted) return;
+      if (_isCancelled || !mounted) return;
       setState(() {
         _isLoading = false;
         _hasError = true;
         _errorMessage = e.message;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (_isCancelled || !mounted) return;
       setState(() {
         _isLoading = false;
         _hasError = true;
@@ -311,23 +317,59 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
     final settings = ref.watch(readingSettingsProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
+    return PopScope(
+      canPop: !_isLoading,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final shouldExit = await AiExitConfirmDialog.show(context);
+        if (shouldExit && context.mounted) {
+          _isCancelled = true;
+          setState(() => _isLoading = false);
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
         backgroundColor: AppColors.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-          tooltip: 'Retour',
-        ),
-        title: const Text(
-          'Expliquer une consigne 💡',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 17,
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () async {
+              if (_isLoading) {
+                final shouldExit = await AiExitConfirmDialog.show(context);
+                if (shouldExit && context.mounted) {
+                  _isCancelled = true;
+                  setState(() => _isLoading = false);
+                  Navigator.of(context).pop();
+                }
+              } else {
+                Navigator.of(context).pop();
+              }
+            },
+            tooltip: 'Retour',
           ),
+        title: const Row(
+          children: [
+            Hero(
+              tag: 'hero_${AppUiAssets.featInstructions}',
+              child: AppAssetIcon(
+                assetPath: AppUiAssets.featInstructions,
+                size: 26,
+              ),
+            ),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Expliquer une consigne',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 17,
+                ),
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -389,6 +431,17 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
               onPressed: _submit,
             ),
 
+            if (_isLoading) ...[
+              const SizedBox(height: 14),
+              const AiWaitingCard(
+                title: 'Explication de la consigne en cours… ⏳',
+                message:
+                    'L\'IA analyse les verbes d\'action, décompose la tâche en étapes simples et prépare les conseils d\'organisation.',
+                tip:
+                    '💡 Astuce : Prends ton temps, la consigne sera bientôt limpide !',
+              ),
+            ],
+
             // ── 7. Option 3: Recent History & Favorites ─────────────────
             if (_history.isNotEmpty || _favorites.isNotEmpty) ...[
               const SizedBox(height: 22),
@@ -421,6 +474,7 @@ class _InstructionAiScreenState extends ConsumerState<InstructionAiScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 }
@@ -521,7 +575,7 @@ class _CyclePill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(
+        const Text(
           'Niveau détecté :',
           style: TextStyle(
             fontSize: 13,
@@ -530,37 +584,41 @@ class _CyclePill extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.3),
+        Expanded(
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                ),
               ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppAssetIcon(assetPath: assetPath, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppAssetIcon(assetPath: assetPath, size: 18),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.edit_rounded,
+                    size: 12,
                     color: AppColors.primary,
                   ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(
-                  Icons.edit_rounded,
-                  size: 12,
-                  color: AppColors.primary,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -596,7 +654,11 @@ class _InputSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 6,
           children: [
             const Text(
               'Ta consigne',
@@ -606,96 +668,97 @@ class _InputSection extends StatelessWidget {
                 color: AppColors.textPrimary,
               ),
             ),
-            const Spacer(),
-            // OCR Scan button
-            GestureDetector(
-              onTap: onScan,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.camera_alt_rounded,
-                        size: 13, color: AppColors.primary),
-                    SizedBox(width: 4),
-                    Text(
-                      'Scanner',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                GestureDetector(
+                  onTap: onScan,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.25),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            // Paste button
-            GestureDetector(
-              onTap: onPaste,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceCard,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.content_paste_rounded,
-                        size: 13, color: AppColors.textSecondary),
-                    SizedBox(width: 4),
-                    Text(
-                      'Coller',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (hasText) ...[
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: onClear,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.close_rounded, size: 13, color: Colors.red),
-                      SizedBox(width: 3),
-                      Text(
-                        'Effacer',
-                        style: TextStyle(
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.camera_alt_rounded,
+                            size: 13, color: AppColors.primary),
+                        SizedBox(width: 4),
+                        Text(
+                          'Scanner',
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.red,
-                            fontWeight: FontWeight.w600),
-                      ),
-                    ],
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+                GestureDetector(
+                  onTap: onPaste,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceCard,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.cardBorder),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.content_paste_rounded,
+                            size: 13, color: AppColors.textSecondary),
+                        SizedBox(width: 4),
+                        Text(
+                          'Coller',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (hasText)
+                  GestureDetector(
+                    onTap: onClear,
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.red.withValues(alpha: 0.25)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.close_rounded, size: 13, color: Colors.red),
+                          SizedBox(width: 3),
+                          Text(
+                            'Effacer',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.red,
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ],
         ),
         const SizedBox(height: 8),

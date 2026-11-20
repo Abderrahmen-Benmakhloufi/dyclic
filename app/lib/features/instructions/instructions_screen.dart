@@ -158,14 +158,25 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
           tooltip: 'Retour',
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
-          'Comprendre les consignes 💡',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            fontFamily: settings.fontFamily,
-          ),
+        title: Row(
+          children: [
+            const AppAssetIcon(
+              assetPath: AppUiAssets.featInstructions,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Comprendre les consignes',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                  fontFamily: settings.fontFamily,
+                ),
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -240,7 +251,6 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
                                 color: AppColors.textSecondary,
                                 fontFamily: settings.fontFamily,
                               ),
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (_searchController.text.isNotEmpty ||
@@ -606,7 +616,7 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
     final cycles = [
       {'key': 'all', 'label': 'Tous les niveaux (${_countForCycle('all')})'},
       {'key': 'primaire', 'label': '🎒 Primaire (${_countForCycle('primaire')})'},
-      {'key': 'college', 'label': '📚 Collège (${_countForCycle('college')})'},
+      {'key': 'college', 'label': '📚 Moyen (${_countForCycle('college')})'},
       {'key': 'lycee', 'label': '🎓 Lycée (${_countForCycle('lycee')})'},
     ];
 
@@ -746,7 +756,6 @@ class _InstructionsScreenState extends ConsumerState<InstructionsScreen> {
                               Flexible(
                                 child: Text(
                                   item.questionTypeLabel,
-                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.bold,

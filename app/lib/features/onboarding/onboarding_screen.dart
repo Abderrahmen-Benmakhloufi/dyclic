@@ -4,7 +4,7 @@ import '../../core/reading_settings/reading_settings_model.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_asset_icon.dart';
-import '../diagnostic/diagnostic_gate_screen.dart';
+import '../diagnostic/diagnostic_question_screen.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -67,29 +67,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       assetPath: AppUiAssets.cyclePrimaire,
                       fallbackEmoji: '🎒',
                       title: 'Primaire',
-                      subtitle: '5e Année Primaire (5e AP)',
+                      subtitle: 'École primaire (Consolidation)',
                       description:
-                          'Phrases très courtes, repères visuels clairs et vocabulaire guidé.',
+                          'Phrases courtes, repères visuels clairs et vocabulaire guidé.',
                     ),
                     const SizedBox(height: 14),
                     _buildLevelCard(
                       level: LearnerLevel.moyen,
                       assetPath: AppUiAssets.cycleCollege,
                       fallbackEmoji: '📚',
-                      title: 'Moyen (Collège)',
-                      subtitle: '1e à 4e Année Moyenne (1e–4e AM)',
+                      title: 'Moyen',
+                      subtitle: 'Collège / Enseignement moyen (BEM / Brevet)',
                       description:
-                          'Situations d\'intégration, explications pas à pas et méthode guidée.',
+                          'Situations complexes, explications pas à pas et préparation aux épreuves.',
                     ),
                     const SizedBox(height: 14),
                     _buildLevelCard(
                       level: LearnerLevel.secondaire,
                       assetPath: AppUiAssets.cycleLycee,
                       fallbackEmoji: '🎓',
-                      title: 'Secondaire (Lycée)',
-                      subtitle: '1e à 3e Année Secondaire (1e–3e AS)',
+                      title: 'Lycée',
+                      subtitle: 'Enseignement secondaire (Baccalauréat)',
                       description:
-                          'Textes plus denses, démarche d\'écriture et réflexion méthodique.',
+                          'Textes denses et argumentatifs, démarche réflexive et préparation au Bac.',
                     ),
                   ],
                 ),
@@ -106,7 +106,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   if (context.mounted) {
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
-                        builder: (_) => const DiagnosticGateScreen(),
+                        builder: (_) => const DiagnosticQuestionScreen(),
                       ),
                     );
                   }
@@ -187,21 +187,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
-                      const Spacer(),
-                      if (isSelected)
+                      if (isSelected) ...[
+                        const SizedBox(width: 8),
                         const Icon(
                           Icons.check_circle_rounded,
                           color: AppColors.primary,
                           size: 22,
                         ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 4),

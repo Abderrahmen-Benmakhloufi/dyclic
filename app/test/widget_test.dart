@@ -32,12 +32,12 @@ void main() {
 
     expect(find.text('Bienvenue !'), findsOneWidget);
     expect(find.text('Primaire'), findsOneWidget);
-    expect(find.text('Moyen (Collège)'), findsOneWidget);
-    expect(find.text('Secondaire (Lycée)'), findsOneWidget);
+    expect(find.text('Moyen'), findsOneWidget);
+    expect(find.text('Lycée'), findsOneWidget);
     expect(find.text('Commencer'), findsOneWidget);
   });
 
-  testWidgets('App shows DiagnosticGateScreen when onboarding is done but diagnostic is not done', (tester) async {
+  testWidgets('App shows DiagnosticQuestionScreen when onboarding is done but diagnostic is not done', (tester) async {
     SharedPreferences.setMockInitialValues({
       'learner_onboarding_completed': true,
       'learner_educational_level': 'moyen',
@@ -55,9 +55,8 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('As-tu des difficultés en lecture ou en écriture ?'), findsOneWidget);
-    expect(find.text('Oui, répondre au questionnaire'), findsOneWidget);
-    expect(find.text('Non, commencer directement'), findsOneWidget);
+    expect(find.text('Évaluation'), findsOneWidget);
+    expect(find.text('Passer'), findsOneWidget);
   });
 
   testWidgets('App shows HomeScreen directly when onboarding and diagnostic are already done', (tester) async {
@@ -88,9 +87,9 @@ void main() {
 
     expect(find.text('Bonjour !'), findsOneWidget);
     expect(find.text('M’aider à lire'), findsOneWidget);
-    expect(find.text('Écouter le texte'), findsOneWidget);
+    expect(find.text('Écouter le texte'), findsWidgets);
     expect(find.text('M’aider à écrire'), findsOneWidget);
-    expect(find.text('Simplifier le texte'), findsOneWidget);
+    expect(find.text('Simplifier le texte'), findsWidgets);
     expect(find.text('Expliquer la consigne'), findsOneWidget);
   });
 
@@ -119,8 +118,13 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Non, commencer directement'), findsOneWidget);
-    await tester.tap(find.text('Non, commencer directement'));
+    expect(find.text('Passer'), findsOneWidget);
+    await tester.tap(find.text('Passer'));
+    await tester.pumpAndSettle();
+
+    // In the confirmation dialog, tap "Passer"
+    expect(find.text('Passer l\'évaluation ?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Passer'));
     await tester.pumpAndSettle();
 
     expect(find.text('Bonjour !'), findsOneWidget);

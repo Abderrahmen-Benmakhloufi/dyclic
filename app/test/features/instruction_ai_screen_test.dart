@@ -35,7 +35,7 @@ void main() {
     await tester.pumpWidget(createTestWidget());
     await tester.pumpAndSettle();
 
-    expect(find.text('Expliquer une consigne 💡'), findsOneWidget);
+    expect(find.text('Expliquer une consigne'), findsOneWidget);
   });
 
   testWidgets('InstructionAiScreen shows catalog banner card', (tester) async {
@@ -63,8 +63,8 @@ void main() {
     await tester.pumpWidget(createTestWidget());
     await tester.pumpAndSettle();
 
-    // Default learner level is "moyen" → Collège
-    expect(find.text('Collège'), findsOneWidget);
+    // Default learner level is "moyen" → Moyen
+    expect(find.text('Moyen'), findsOneWidget);
     expect(find.text('Niveau détecté :'), findsOneWidget);
   });
 

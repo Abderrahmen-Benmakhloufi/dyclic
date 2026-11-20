@@ -39,14 +39,14 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify Title & Header
-    expect(find.text('Comprendre les consignes 💡'), findsOneWidget);
+    expect(find.text('Comprendre les consignes'), findsOneWidget);
     expect(find.textContaining('17 consignes d’examens expliquées pas à pas'),
         findsOneWidget);
 
     // Verify Cycle Filter Pills
     expect(find.textContaining('Tous les niveaux (17)'), findsOneWidget);
     expect(find.textContaining('Primaire (5)'), findsOneWidget);
-    expect(find.textContaining('Collège (7)'), findsOneWidget);
+    expect(find.textContaining('Moyen (7)'), findsOneWidget);
     expect(find.textContaining('Lycée (5)'), findsOneWidget);
 
     // Verify Question Type Filter Pills
@@ -106,7 +106,7 @@ void main() {
 
     expect(find.text('4 consignes disponibles'), findsOneWidget);
     expect(find.text('Production écrite : raconter un événement vécu'), findsOneWidget);
-    expect(find.text('Production argumentative (Type BEM)'), findsOneWidget);
+    expect(find.text('Production argumentative (Brevet - DNB)'), findsOneWidget);
   });
 
   testWidgets('Searching filters list dynamically and shows empty state on no match',
@@ -125,7 +125,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'argument');
     await tester.pumpAndSettle();
 
-    expect(find.text('Production argumentative (Type BEM)'), findsOneWidget);
+    expect(find.text('Production argumentative (Brevet - DNB)'), findsOneWidget);
 
     // Enter an invalid search query
     await tester.enterText(find.byType(TextField), 'xyznonexistent123');
@@ -189,7 +189,7 @@ void main() {
     await tester.pumpWidget(createTestWidget());
     await tester.pumpAndSettle();
 
-    expect(find.text('Comprendre les consignes 💡'), findsOneWidget);
+    expect(find.text('Comprendre les consignes'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

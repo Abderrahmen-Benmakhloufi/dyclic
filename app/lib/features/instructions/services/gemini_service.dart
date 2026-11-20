@@ -54,7 +54,7 @@ class GeminiService {
         return 'lycée (élève de 15 à 18 ans)';
       case 'college':
       default:
-        return 'collège (élève de 11 à 15 ans)';
+        return 'moyen (collège, élève de 11 à 15 ans)';
     }
   }
 
@@ -67,7 +67,7 @@ class GeminiService {
     final directives = <String>[];
     if (profile.overwhelmedByText) {
       directives.add(
-          '- L\'élève est vite submergé par les textes longs : limite impérativement l\'explication à 3 étapes courtes, directes et aérées.');
+          '- L\'élève a besoin d\'un découpage très aéré et progressif : formule des étapes détaillées mais avec des phrases courtes, limpides et bien espacées.');
     }
     if (profile.poorWordDecoding) {
       directives.add(
@@ -83,7 +83,7 @@ class GeminiService {
     }
     if (profile.mirrorLetterConfusion) {
       directives.add(
-          '- L\'élève présente des confusions visuelles de lettres (ex: b/d) : privilégie des formulations explicites.');
+          '- L\'élève présente des confusions visuelles de lettres (ex: b/d, p/q) : privilégie des formulations explicites.');
     }
 
     if (directives.isEmpty) return '';
@@ -104,15 +104,19 @@ ${directives.join('\n')}
     required String questionText,
     required String learnerLevelCode,
     LearnerProfile? profile,
+    String? cloudMistakesSummary,
   }) async {
     final cycle = _cycleFromLearnerCode(learnerLevelCode);
     final cycleLabel = _cycleLabelFr(cycle);
     final profileDirectives = _buildProfileDirectives(profile);
+    final cloudSection = (cloudMistakesSummary != null && cloudMistakesSummary.trim().isNotEmpty)
+        ? '\n$cloudMistakesSummary\n'
+        : '';
 
     final levelLabel = switch (cycle) {
       'primaire' => 'Primaire',
       'lycee' => 'Lycée',
-      _ => 'Collège',
+      _ => 'Moyen',
     };
 
     final prompt = '''
@@ -120,6 +124,7 @@ Tu es un assistant pédagogique francophone expert en didactique du français et
 Analyse cette consigne d'examen pour un élève de $cycleLabel.
 
 $profileDirectives
+$cloudSection
 
 Consigne : "$questionText"
 
@@ -134,21 +139,22 @@ Le JSON doit respecter exactement ce format :
   "questionType": "[une valeur parmi : comprehension | langue | production]",
   "originalFr": "$questionText",
   "steps": [
-    {"stepNumber": 1, "textFr": "[première étape concrète, verbe à l'impératif, langage adapté au niveau]"},
-    {"stepNumber": 2, "textFr": "[deuxième étape]"},
-    {"stepNumber": 3, "textFr": "[troisième étape]"},
-    {"stepNumber": 4, "textFr": "[quatrième étape si nécessaire]"},
-    {"stepNumber": 5, "textFr": "[cinquième étape si nécessaire]"}
+    {"stepNumber": 1, "textFr": "[Étape 1 : repérer et surligner les mots-clés et le verbe d'action de la consigne pour bien comprendre ce qui est demandé]"},
+    {"stepNumber": 2, "textFr": "[Étape 2 : identifier les indices, paragraphes ou outils de langue nécessaires dans le texte ou la leçon]"},
+    {"stepNumber": 3, "textFr": "[Étape 3 : réfléchir au sens, formuler l'idée principale au brouillon ou dans sa tête]"},
+    {"stepNumber": 4, "textFr": "[Étape 4 : rédiger la réponse de manière claire, avec une phrase complète et bien construite]"},
+    {"stepNumber": 5, "textFr": "[Étape 5 : relire pour vérifier si la consigne est respectée et corriger les éventuelles erreurs d'accords]"}
   ]
 }
 
-Règles :
-- Fournis 3 à 5 étapes selon la complexité (maximum 3 si l'élève est facilement submergé par les textes longs).
-- Les étapes doivent être actionnables et progressives.
-- Pour le primaire : vocabulaire très simple, phrases courtes, exemples concrets.
-- Pour le collège : langage clair, termes scolaires de base.
-- Pour le lycée : langage scolaire précis, démarche analytique.
-- domain et questionType doivent être cohérents entre eux.
+Règles pédagogiques strictes :
+- Fournis une démarche complète, détaillée et progressive en 4 à 6 étapes (ne te limite pas à 3 étapes courtes). L'objectif est d'expliquer en profondeur la méthode pour que l'élève comprenne exactement comment réussir.
+- Chaque étape doit être concrète, actionnable et débuter par un verbe d'action clair à l'impératif ou à l'infinitif.
+- Développe chaque étape avec des explications explicites (ex: donner un exemple de phrase de réponse ou préciser où chercher).
+- Pour le primaire : vocabulaire simple, phrases courtes, explications imagées et concrètes.
+- Pour le moyen : démarche méthodique, repérage précis des éléments du texte, justification attendue.
+- Pour le lycée : démarche analytique rigoureuse, problématisation, argumentation et nuances.
+- domain et questionType doivent être parfaitement cohérents.
 - Réponds UNIQUEMENT avec le JSON, rien d'autre.
 ''';
 

@@ -1,6 +1,7 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'tts_platform_bridge.dart';
 
 final ttsServiceProvider = Provider<TtsService>((ref) {
   final service = TtsService();
@@ -10,13 +11,28 @@ final ttsServiceProvider = Provider<TtsService>((ref) {
   return service;
 });
 
-/// Native Android TTS via Platform Channel
+/// Represents a sentence speech event emitted by the TTS engine (Android Native or Web Speech API).
+class TtsSentenceEvent {
+  final int sentenceIndex;
+  final int totalSentences;
+  final String sentenceText;
+  final int durationMs;
+
+  const TtsSentenceEvent({
+    required this.sentenceIndex,
+    this.totalSentences = 1,
+    this.sentenceText = '',
+    this.durationMs = -1,
+  });
+}
+
+/// Universal French TTS Service
 ///
-/// Bypasses flutter_tts entirely and calls Android TextToSpeech API
-/// directly through a custom Kotlin MethodChannel implementation.
-/// This ensures maximum reliability, automatic unmute, and direct audio control.
+/// Automatically uses:
+/// - Android: Custom Kotlin MethodChannel implementation with Google Translate TTS / system fallback.
+/// - Web / iOS: Browser Web Speech API (`window.speechSynthesis`) with native French voices (Siri, Thomas, etc.).
 class TtsService {
-  static const _channel = MethodChannel('dz.eduaide.lecture_aide/native_tts');
+  final TtsPlatformBridge _bridge = TtsPlatformBridge.create();
 
   bool _isPlaying = false;
   bool _isReady = false;
@@ -25,50 +41,68 @@ class TtsService {
 
   final ValueNotifier<bool> isPlayingNotifier = ValueNotifier<bool>(false);
 
+  void Function(TtsSentenceEvent event)? onSentenceStart;
+  void Function(int sentenceIndex)? onSentenceDone;
+
+  final _sentenceStartController =
+      StreamController<TtsSentenceEvent>.broadcast();
+  final _sentenceDoneController = StreamController<int>.broadcast();
+
+  Stream<TtsSentenceEvent> get sentenceStartStream =>
+      _sentenceStartController.stream;
+  Stream<int> get sentenceDoneStream => _sentenceDoneController.stream;
+
   bool get isPlaying => _isPlaying;
   bool get isReady => _isReady;
   String? get lastError => _lastError;
   Map<String, dynamic>? get lastDiagnostics => _lastDiagnostics;
 
   TtsService() {
-    _channel.setMethodCallHandler(_handleNativeCall);
+    _bridge.initialize(
+      onStart: () {
+        _isPlaying = true;
+        isPlayingNotifier.value = true;
+        debugPrint('TTS: onStart');
+      },
+      onSentenceStart: (idx, durationMs) {
+        final ev = TtsSentenceEvent(
+          sentenceIndex: idx,
+          totalSentences: 1,
+          sentenceText: '',
+          durationMs: durationMs,
+        );
+        _sentenceStartController.add(ev);
+        onSentenceStart?.call(ev);
+        debugPrint('TTS: onSentenceStart = $idx ($durationMs ms)');
+      },
+      onSentenceDone: (idx) {
+        _sentenceDoneController.add(idx);
+        onSentenceDone?.call(idx);
+        debugPrint('TTS: onSentenceDone = $idx');
+      },
+      onDone: () {
+        _isPlaying = false;
+        isPlayingNotifier.value = false;
+        debugPrint('TTS: onDone');
+      },
+      onError: (err) {
+        _isPlaying = false;
+        isPlayingNotifier.value = false;
+        _lastError = err;
+        debugPrint('TTS: onError = $err');
+      },
+    );
     _checkReady();
   }
 
   Future<void> _checkReady() async {
     try {
-      final ready = await _channel.invokeMethod<bool>('isReady');
-      _isReady = ready ?? false;
-      debugPrint('NativeTTS: isReady = $_isReady');
+      _isReady = await _bridge.isReady();
+      debugPrint('TTS: isReady = $_isReady');
     } catch (e) {
-      debugPrint('NativeTTS: _checkReady error: $e');
+      _isReady = true;
+      debugPrint('TTS: _checkReady error: $e');
     }
-  }
-
-  Future<dynamic> _handleNativeCall(MethodCall call) async {
-    switch (call.method) {
-      case 'onTtsReady':
-        _isReady = call.arguments == true;
-        debugPrint('NativeTTS: onTtsReady = $_isReady');
-        break;
-      case 'onStart':
-        _isPlaying = true;
-        isPlayingNotifier.value = true;
-        debugPrint('NativeTTS: onStart');
-        break;
-      case 'onDone':
-        _isPlaying = false;
-        isPlayingNotifier.value = false;
-        debugPrint('NativeTTS: onDone');
-        break;
-      case 'onError':
-        _isPlaying = false;
-        isPlayingNotifier.value = false;
-        _lastError = call.arguments?.toString();
-        debugPrint('NativeTTS: onError = $_lastError');
-        break;
-    }
-    return null;
   }
 
   /// Speaks a single word with clear French pronunciation.
@@ -76,149 +110,81 @@ class TtsService {
     final clean =
         word.replaceAll(RegExp(r"[^\p{L}\p{M}\-']", unicode: true), '').trim();
     if (clean.isEmpty) return;
-    await _speak(clean);
+    await _speak(clean, sentences: [clean]);
   }
 
   /// Speaks a phrase or full text.
-  Future<void> speakText(String text) async {
+  Future<void> speakText(String text, {List<String>? sentences}) async {
     final clean = text.trim();
     if (clean.isEmpty) return;
-    await _speak(clean);
+    await _speak(clean, sentences: sentences);
   }
 
-  Future<Map<String, dynamic>> _speak(String text) async {
-    try {
-      _isPlaying = true;
-      isPlayingNotifier.value = true;
-      _lastError = null;
+  Future<Map<String, dynamic>> _speak(
+    String text, {
+    List<String>? sentences,
+  }) async {
+    _isPlaying = true;
+    isPlayingNotifier.value = true;
+    _lastError = null;
 
-      final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
-        'speak',
-        {'text': text},
-      );
-
-      final resultMap = result?.cast<String, dynamic>() ?? {};
-      debugPrint('NativeTTS: speak result = $resultMap');
-
-      if (resultMap['success'] != true) {
-        _isPlaying = false;
-        isPlayingNotifier.value = false;
-        _lastError = resultMap['error']?.toString();
-      }
-
-      return resultMap;
-    } catch (e) {
+    final success = await _bridge.speak(text, sentences: sentences);
+    if (!success) {
       _isPlaying = false;
       isPlayingNotifier.value = false;
-      _lastError = e.toString();
-      debugPrint('NativeTTS: speak error: $e');
-      return {'success': false, 'error': e.toString()};
     }
+    return {'success': success};
   }
 
-  /// Gets full diagnostics from the native TTS engine.
+  /// Gets full diagnostics from the active TTS engine.
   Future<Map<String, dynamic>> getDiagnostics() async {
-    try {
-      final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
-        'getDiagnostics',
-      );
-      _lastDiagnostics = result?.cast<String, dynamic>();
-      return _lastDiagnostics ?? {};
-    } catch (e) {
-      debugPrint('NativeTTS: getDiagnostics error: $e');
-      return {'error': e.toString()};
-    }
+    _lastDiagnostics = await _bridge.getDiagnostics();
+    return _lastDiagnostics ?? {};
   }
 
   /// Gets available TTS engines.
   Future<List<Map<String, String>>> getEngines() async {
-    try {
-      final result = await _channel.invokeMethod<List<dynamic>>('getEngines');
-      return result
-              ?.map((e) => (e as Map<dynamic, dynamic>).cast<String, String>())
-              .toList() ??
-          [];
-    } catch (e) {
-      debugPrint('NativeTTS: getEngines error: $e');
-      return [];
-    }
+    return _bridge.getEngines();
   }
 
   /// Selects a specific TTS engine by package name.
   Future<bool> setEngine(String engineName) async {
-    try {
-      final result = await _channel.invokeMethod<bool>(
-        'setEngine',
-        {'engine': engineName},
-      );
-      return result ?? false;
-    } catch (e) {
-      debugPrint('NativeTTS: setEngine error: $e');
-      return false;
-    }
+    return _bridge.setEngine(engineName);
   }
 
   /// Gets available languages.
   Future<List<String>> getLanguages() async {
-    try {
-      final result =
-          await _channel.invokeMethod<List<dynamic>>('getLanguages');
-      return result?.map((e) => e.toString()).toList() ?? [];
-    } catch (e) {
-      debugPrint('NativeTTS: getLanguages error: $e');
-      return [];
-    }
+    return _bridge.getLanguages();
   }
 
   /// Opens Android TTS Settings screen.
   Future<bool> openTtsSettings() async {
-    try {
-      final result = await _channel.invokeMethod<bool>('openTtsSettings');
-      return result ?? false;
-    } catch (e) {
-      debugPrint('NativeTTS: openTtsSettings error: $e');
-      return false;
-    }
+    return _bridge.openTtsSettings();
   }
 
   /// Prompts Android to download / install voice data.
   Future<bool> installVoiceData() async {
-    try {
-      final result = await _channel.invokeMethod<bool>('installVoiceData');
-      return result ?? false;
-    } catch (e) {
-      debugPrint('NativeTTS: installVoiceData error: $e');
-      return false;
-    }
+    return _bridge.installVoiceData();
   }
 
-  /// Reinitializes the native TTS engine.
+  /// Reinitializes the active TTS engine.
   Future<Map<String, dynamic>> reinitialize() async {
-    try {
-      final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
-        'reinitialize',
-      );
-      return result?.cast<String, dynamic>() ?? {};
-    } catch (e) {
-      debugPrint('NativeTTS: reinitialize error: $e');
-      return {'success': false, 'error': e.toString()};
-    }
+    return _bridge.reinitialize();
   }
 
   /// Stops any ongoing audio speech immediately.
   Future<void> stop() async {
-    try {
-      _isPlaying = false;
-      isPlayingNotifier.value = false;
-      await _channel.invokeMethod('stop');
-    } catch (_) {}
+    _isPlaying = false;
+    isPlayingNotifier.value = false;
+    await _bridge.stop();
   }
 
   void dispose() {
     _isPlaying = false;
     isPlayingNotifier.value = false;
-    try {
-      _channel.invokeMethod('stop');
-    } catch (_) {}
+    _sentenceStartController.close();
+    _sentenceDoneController.close();
+    isPlayingNotifier.dispose();
+    _bridge.stop();
   }
 }

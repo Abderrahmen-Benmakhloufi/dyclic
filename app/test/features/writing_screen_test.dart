@@ -36,8 +36,8 @@ void main() {
     await tester.pumpWidget(createTestWidget());
     await tester.pumpAndSettle();
 
-    expect(find.text("M'aider à écrire ✍️"), findsOneWidget);
-    expect(find.text('Collège'), findsOneWidget);
+    expect(find.text("M'aider à écrire"), findsOneWidget);
+    expect(find.text('Moyen'), findsOneWidget);
     expect(find.text('Mon texte'), findsOneWidget);
     expect(find.text('Scanner'), findsOneWidget);
   });
@@ -78,7 +78,8 @@ void main() {
     );
     expect(emptyBtn.onPressed, isNull);
 
-    await tester.enterText(find.byType(TextField).last, 'Le chavel court.');
+    await tester.enterText(find.byType(TextField).last,
+        'Hier matin je suis parti avec mon père au marché pour acheter des fruits.');
     await tester.pump();
 
     final activeBtn = tester.widget<ElevatedButton>(

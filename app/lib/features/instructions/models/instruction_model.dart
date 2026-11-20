@@ -79,7 +79,7 @@ class InstructionItem {
       case 'primaire':
         return '🎒 Primaire';
       case 'college':
-        return '📚 Collège';
+        return '📚 Moyen';
       case 'lycee':
         return '🎓 Lycée';
       default:

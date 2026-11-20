@@ -39,7 +39,7 @@ class WritingGeminiService {
         return 'lycée (élève de 15 à 18 ans)';
       case 'college':
       default:
-        return 'collège (élève de 11 à 15 ans)';
+        return 'moyen (collège, élève de 11 à 15 ans)';
     }
   }
 
@@ -85,11 +85,15 @@ ${directives.join('\n')}
     required String learnerLevelCode,
     LearnerProfile? profile,
     WritingErrorProfile? errorProfile,
+    String? cloudMistakesSummary,
   }) async {
     final cycle = _cycleFromLearnerCode(learnerLevelCode);
     final cycleLabel = _cycleLabelFr(cycle);
     final profileDirectives = _buildProfileDirectives(profile);
     final errorHistorySection = errorProfile?.toCompactPromptSummary() ?? '';
+    final cloudSection = (cloudMistakesSummary != null && cloudMistakesSummary.trim().isNotEmpty)
+        ? '\n$cloudMistakesSummary\n'
+        : '';
 
     final subjectSection = subjectPrompt.trim().isNotEmpty
         ? 'Sujet / Consigne donnée par le professeur : "$subjectPrompt"\n'
@@ -102,6 +106,7 @@ Ton objectif N'EST PAS juste de corriger à sa place, mais de l'aider à COMPREN
 
 $profileDirectives
 $errorHistorySection
+$cloudSection
 $subjectSection
 Texte écrit par l'élève :
 """
@@ -132,6 +137,10 @@ Guide strict pour choisir "category" (en lien avec les troubles DYS) :
 - "regle_lecture" : règle contextuelle des lettres/sons (ex: g devant e/i vs gu, c devant e/i vs ç, s entre voyelles vs ss, ch, ph, eau/au, on/om, an/am).
 - "grammaire" : accords pluriel (-s/-x/-nt), accords féminin (-e), conjugaison des verbes, homophones grammaticaux (a/à, et/est, son/sont, ces/ses, ou/où).
 - "ponctuation" : majuscule manquante en début de phrase ou nom propre, point/virgule manquant, phrase trop longue ou coupée.
+
+Règles pédagogiques prioritaires pour les lettres miroirs et confusions visuelles :
+- Si l'élève commet une confusion ou inversion entre les lettres 'p' et 'q' (ou utilise 'q' à la place de 'p', ou 'p' à la place de 'q'), utilise OBLIGATOIREMENT cette formulation exacte dans "tipFr" ou "explanationFr" :
+"Pour ne plus confondre le p et le q, observe leur orientation : le p a sa boucle à droite, tandis que le q a sa boucle à gauche. Prends le temps de regarder chaque lettre avant de la lire ou de l'écrire."
 
 Règles importantes :
 - S'il n'y a aucune erreur dans le texte, retourne une liste "errors": [] vide et félicite l'élève.

@@ -5,6 +5,7 @@ import '../../core/learner_profile/learner_profile_model.dart';
 import '../../core/learner_profile/learner_profile_notifier.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_asset_icon.dart';
 import 'data/diagnostic_questions.dart';
 import 'diagnostic_result_screen.dart';
 
@@ -96,7 +97,11 @@ class DiagnosticReviewScreen extends ConsumerWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text('📋', style: TextStyle(fontSize: 24)),
+            child: const AppAssetIcon(
+              assetPath: AppUiAssets.clipboardQuiz,
+              size: 28,
+              fallbackEmoji: '📋',
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(

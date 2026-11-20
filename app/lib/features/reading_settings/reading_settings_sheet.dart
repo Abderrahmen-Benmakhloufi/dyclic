@@ -203,7 +203,7 @@ class ReadingSettingsSheet extends ConsumerWidget {
               ),
               ButtonSegment(
                 value: LearnerLevel.secondaire,
-                label: Text('Secondaire'),
+                label: Text('Lycée'),
               ),
             ],
             selected: {settings.learnerLevel},
@@ -302,7 +302,6 @@ class ReadingSettingsSheet extends ConsumerWidget {
                 const Expanded(
                   child: Text(
                     'Réglages de lecture',
-                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.bold,

@@ -4,6 +4,7 @@ import '../../core/reading_settings/reading_settings_model.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_asset_icon.dart';
+import '../../core/widgets/app_card_press_effect.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import '../reading_support/calibration/reading_calibration_screen.dart';
 import '../reading_support/reading_support_screen.dart';
@@ -12,20 +13,46 @@ import '../tts/tts_screen.dart';
 import '../writing/writing_screen.dart';
 import '../simplify/simplify_screen.dart';
 import '../instructions/instruction_ai_screen.dart';
+import '../../core/services/cloud_sync_service.dart';
+import 'widgets/app_drawer.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        CloudSyncService.syncFromCloud(ref);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(readingSettingsProvider);
     final theme = Theme.of(context);
 
     final levelLabel = _getLevelLabel(settings.learnerLevel);
 
     return Scaffold(
+      drawer: const AppDrawer(),
       appBar: AppBar(
-        titleSpacing: 20,
+        centerTitle: false,
+        titleSpacing: 0,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu_rounded),
+            tooltip: 'Menu principal',
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: InkWell(
           onTap: () => ReadingSettingsSheet.show(context),
           borderRadius: BorderRadius.circular(20),
@@ -44,12 +71,16 @@ class HomeScreen extends ConsumerWidget {
                   color: AppColors.primary,
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  levelLabel,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                Flexible(
+                  child: Text(
+                    levelLabel,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
                 const Icon(
@@ -108,13 +139,17 @@ class HomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
+            // ── Section 1 : LECTURE & COMPRÉHENSION ──
+            _buildSectionHeader('📖 Lecture & Compréhension'),
+            const SizedBox(height: 12),
+
             // 1. M'aider à lire
             _buildFeatureCard(
               context: context,
               assetPath: AppUiAssets.featReading,
               fallbackEmoji: '📖',
               title: 'M’aider à lire',
-              description: 'Faciliter la lecture du texte.',
+              description: 'Faciliter la lecture et le confort visuel',
               onTap: () {
                 final currentSettings = ref.read(readingSettingsProvider);
                 if (!currentSettings.hasCompletedCalibration) {
@@ -132,59 +167,50 @@ class HomeScreen extends ConsumerWidget {
                 }
               },
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
 
-            // Aide au décodage (Lettres et sons)
-            _buildFeatureCard(
-              context: context,
-              assetPath: AppUiAssets.featDecoding,
-              fallbackEmoji: '🔤',
-              title: 'Aide au décodage',
-              description: 'Découvrir comment se prononcent les lettres et les sons.',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const DecodingScreen()),
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // 2. Écouter le texte
-            _buildFeatureCard(
-              context: context,
-              assetPath: AppUiAssets.featTts,
-              fallbackEmoji: '🔊',
-              title: 'Écouter le texte',
-              description: 'Écouter le texte à voix haute.',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const TtsScreen()),
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // 3. M'aider à écrire
-            _buildFeatureCard(
-              context: context,
-              assetPath: AppUiAssets.featWriting,
-              fallbackEmoji: '✏️',
-              title: 'M’aider à écrire',
-              description: 'Être accompagné pour réaliser une production écrite.',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const WritingScreen()),
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // 4. Simplifier le texte
+            // 2. Simplifier le texte
             _buildFeatureCard(
               context: context,
               assetPath: AppUiAssets.featSimplify,
               fallbackEmoji: '📝',
               title: 'Simplifier le texte',
-              description: 'Rendre le texte plus simple et plus facile à comprendre.',
+              description: 'Rendre un texte plus court et accessible',
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const SimplifyScreen()),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
+
+            // 3. Écouter le texte
+            _buildFeatureCard(
+              context: context,
+              assetPath: AppUiAssets.featTts,
+              fallbackEmoji: '🔊',
+              title: 'Écouter le texte',
+              description: 'Synthèse vocale mot à mot',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const TtsScreen()),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // ── Section 2 : ÉCRITURE & RÉDACTION ──
+            _buildSectionHeader('✏️ Écriture & Rédaction'),
+            const SizedBox(height: 12),
+
+            // 4. M'aider à écrire
+            _buildFeatureCard(
+              context: context,
+              assetPath: AppUiAssets.featWriting,
+              fallbackEmoji: '✏️',
+              title: 'M’aider à écrire',
+              description: 'Corriger et valoriser ma rédaction avec l\'IA',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const WritingScreen()),
+              ),
+            ),
+            const SizedBox(height: 12),
 
             // 5. Expliquer la consigne
             _buildFeatureCard(
@@ -192,12 +218,30 @@ class HomeScreen extends ConsumerWidget {
               assetPath: AppUiAssets.featInstructions,
               fallbackEmoji: '💡',
               title: 'Expliquer la consigne',
-              description: 'Comprendre ce qu’on me demande de faire.',
+              description: 'Comprendre le sujet d\'exercice pas à pas',
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const InstructionAiScreen()),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 24),
+
+            // ── Section 3 : DÉCODAGE & PHONÉTIQUE (Isolée en bas) ──
+            _buildSectionHeader('🔤 Apprentissage des sons & Décodage'),
+            const SizedBox(height: 12),
+
+            // 6. Aide au décodage (Seule en bas)
+            _buildFeatureCard(
+              context: context,
+              assetPath: AppUiAssets.featDecoding,
+              fallbackEmoji: '🔤',
+              title: 'Aide au décodage & Quiz',
+              description:
+                  'Découvrir comment se prononcent les lettres et les sons',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const DecodingScreen()),
+              ),
+            ),
+            const SizedBox(height: 20),
             Center(
               child: Text(
                 'v1.0.17',
@@ -214,6 +258,20 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+        ),
+      ),
+    );
+  }
+
   Widget _buildFeatureCard({
     required BuildContext context,
     required String assetPath,
@@ -222,9 +280,8 @@ class HomeScreen extends ConsumerWidget {
     required String description,
     required VoidCallback onTap,
   }) {
-    return InkWell(
+    return AppCardPressEffect(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
@@ -251,10 +308,13 @@ class HomeScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(14),
               ),
               alignment: Alignment.center,
-              child: AppAssetIcon(
-                assetPath: assetPath,
-                size: 40,
-                fallbackEmoji: fallbackEmoji,
+              child: Hero(
+                tag: 'hero_$assetPath',
+                child: AppAssetIcon(
+                  assetPath: assetPath,
+                  size: 40,
+                  fallbackEmoji: fallbackEmoji,
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -298,11 +358,11 @@ class HomeScreen extends ConsumerWidget {
   String _getLevelLabel(LearnerLevel level) {
     switch (level) {
       case LearnerLevel.primaire:
-        return 'Primaire (5e AP)';
+        return 'Primaire';
       case LearnerLevel.secondaire:
-        return 'Secondaire (Lycée)';
+        return 'Lycée';
       case LearnerLevel.moyen:
-        return 'Moyen (Collège)';
+        return 'Moyen';
     }
   }
 }

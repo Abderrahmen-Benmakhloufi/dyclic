@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/learner_profile/learner_profile_model.dart';
 import '../../core/learner_profile/learner_profile_notifier.dart';
 import '../../core/theme/app_colors.dart';
-import '../home/home_screen.dart';
+import '../../core/widgets/app_asset_icon.dart';
+import '../home/main_navigation_scaffold.dart';
 
 // ---------------------------------------------------------------------------
 // DiagnosticResultScreen — Screen 3: profile summary after questionnaire
@@ -23,6 +24,13 @@ class DiagnosticResultScreen extends ConsumerWidget {
         backgroundColor: AppColors.background,
         elevation: 0,
         automaticallyImplyLeading: false,
+        leading: Navigator.of(context).canPop()
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+                tooltip: 'Retour',
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : null,
         centerTitle: true,
         title: Text(
           'Ton profil',
@@ -83,20 +91,35 @@ class DiagnosticResultScreen extends ConsumerWidget {
   Widget _buildHeader(BuildContext context) {
     return Column(
       children: [
-        // Success icon
-        Container(
-          width: 88,
-          height: 88,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFEDE9F6), Color(0xFFEAF2EC)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        // Success icon with celebratory pop
+        TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0.1, end: 1.0),
+          duration: const Duration(milliseconds: 650),
+          curve: Curves.elasticOut,
+          builder: (context, scale, child) {
+            return Transform.scale(
+              scale: scale,
+              child: child,
+            );
+          },
+          child: Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFEDE9F6), Color(0xFFEAF2EC)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(28),
             ),
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: const Center(
-            child: Text('✅', style: TextStyle(fontSize: 40)),
+            child: const Center(
+              child: AppAssetIcon(
+                assetPath: AppUiAssets.badgeSuccess,
+                size: 56,
+                fallbackEmoji: '✅',
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 16),
@@ -132,7 +155,11 @@ class DiagnosticResultScreen extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('💚', style: TextStyle(fontSize: 20)),
+          const AppAssetIcon(
+            assetPath: AppUiAssets.heartSupport,
+            size: 24,
+            fallbackEmoji: '💚',
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -166,7 +193,9 @@ class DiagnosticResultScreen extends ConsumerWidget {
                 .saveCompletedProfile(profile);
             if (context.mounted) {
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const MainNavigationScaffold(initialIndex: 0),
+                ),
                 (route) => false,
               );
             }
@@ -181,7 +210,10 @@ class DiagnosticResultScreen extends ConsumerWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          child: const Text("Commencer l'application ✓"),
+          child: const FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text("Commencer l'application ✓"),
+          ),
         ),
       ),
     );
@@ -211,22 +243,24 @@ class _DimensionCard extends StatelessWidget {
         children: [
           // Header row
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Text(dimension.emoji,
-                      style: const TextStyle(fontSize: 16)),
-                  const SizedBox(width: 8),
-                  Text(
-                    dimension.name,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                ],
+              Text(
+                dimension.emoji,
+                style: const TextStyle(fontSize: 18),
               ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  dimension.name,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
               // Severity badge
               Container(
                 padding:
@@ -247,15 +281,26 @@ class _DimensionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          // Progress bar
+          // Progress bar with smooth animated fill
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: dimension.score / 100,
-              minHeight: 5,
-              backgroundColor: AppColors.cardBorder,
-              valueColor:
-                  AlwaysStoppedAnimation<Color>(dimension.level.barColor),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(
+                begin: 0.0,
+                end: (dimension.score / 100.0).clamp(0.0, 1.0),
+              ),
+              duration: const Duration(milliseconds: 650),
+              curve: Curves.easeOutCubic,
+              builder: (context, animatedVal, _) {
+                return LinearProgressIndicator(
+                  value: animatedVal,
+                  minHeight: 5,
+                  backgroundColor: AppColors.cardBorder,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    dimension.level.barColor,
+                  ),
+                );
+              },
             ),
           ),
           // Flag chips (only if any)

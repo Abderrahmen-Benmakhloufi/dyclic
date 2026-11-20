@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/learner_profile/learner_profile_notifier.dart';
 import '../../core/theme/app_colors.dart';
+import '../home/main_navigation_scaffold.dart';
 import 'data/diagnostic_questions.dart';
 import 'diagnostic_review_screen.dart';
 
 // ---------------------------------------------------------------------------
-// DiagnosticQuestionScreen — Screen 2: one question at a time, 24 total
+// DiagnosticQuestionScreen — Screen 2: one question at a time, 23 total
 // ---------------------------------------------------------------------------
 
-class DiagnosticQuestionScreen extends StatefulWidget {
+class DiagnosticQuestionScreen extends ConsumerStatefulWidget {
   const DiagnosticQuestionScreen({super.key});
 
   @override
-  State<DiagnosticQuestionScreen> createState() =>
+  ConsumerState<DiagnosticQuestionScreen> createState() =>
       _DiagnosticQuestionScreenState();
 }
 
-class _DiagnosticQuestionScreenState extends State<DiagnosticQuestionScreen> {
+class _DiagnosticQuestionScreenState
+    extends ConsumerState<DiagnosticQuestionScreen> {
   int _currentIndex = 0;
 
   /// Maps questionId → raw int score
@@ -34,9 +38,53 @@ class _DiagnosticQuestionScreenState extends State<DiagnosticQuestionScreen> {
 
   void _goBack() {
     if (_currentIndex == 0) {
-      Navigator.of(context).pop();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        _skipDiagnostic();
+      }
     } else {
       setState(() => _currentIndex--);
+    }
+  }
+
+  Future<void> _skipDiagnostic() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Passer l\'évaluation ?'),
+        content: const Text(
+          'Tu pourras toujours répondre aux questions plus tard depuis ton profil.\n\nSouhaites-tu accéder directement à l\'application ?',
+          style: TextStyle(height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Continuer le test'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Passer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      await ref.read(learnerProfileProvider.notifier).skipDiagnostic();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => const MainNavigationScaffold(initialIndex: 0),
+          ),
+          (route) => false,
+        );
+      }
     }
   }
 
@@ -97,16 +145,51 @@ class _DiagnosticQuestionScreenState extends State<DiagnosticQuestionScreen> {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 24),
+                    horizontal: 20, vertical: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ── Mention informative / médicale discrète ──────────────
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 1.5),
+                            child: Icon(
+                              Icons.info_outline_rounded,
+                              size: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          Expanded(
+                            child: Text(
+                              'Ce test est uniquement informatif. Il ne constitue en aucun cas un diagnostic médical. Seul un professionnel de santé qualifié peut poser un diagnostic.',
+                              style: const TextStyle(
+                                fontSize: 10.5,
+                                color: AppColors.textSecondary,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     // Category badge
                     _CategoryBadge(
                       emoji: _current.categoryEmoji,
                       name: _current.categoryName,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     // Question text
                     Text(
                       _current.text,
@@ -115,21 +198,21 @@ class _DiagnosticQuestionScreenState extends State<DiagnosticQuestionScreen> {
                           .titleLarge
                           ?.copyWith(
                             color: AppColors.textPrimary,
-                            height: 1.7,
+                            height: 1.55,
                             letterSpacing: 0.2,
                           ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       'Choisis la réponse qui te correspond le mieux.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
                           ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
                     // Answer options
                     _buildAnswerOptions(),
-                    const SizedBox(height: 100), // space for nav bar
+                    const SizedBox(height: 80), // space for nav bar
                   ],
                 ),
               ),
@@ -173,7 +256,7 @@ class _DiagnosticQuestionScreenState extends State<DiagnosticQuestionScreen> {
           Container(
             padding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            margin: const EdgeInsets.only(right: 8),
+            margin: const EdgeInsets.only(right: 4),
             decoration: BoxDecoration(
               color: AppColors.cardBorder.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(999),
@@ -184,6 +267,22 @@ class _DiagnosticQuestionScreenState extends State<DiagnosticQuestionScreen> {
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w600,
                   ),
+            ),
+          ),
+          // Bouton Passer
+          TextButton(
+            onPressed: _skipDiagnostic,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(50, 36),
+            ),
+            child: const Text(
+              'Passer',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
             ),
           ),
         ],

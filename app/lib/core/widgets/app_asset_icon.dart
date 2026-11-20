@@ -38,6 +38,22 @@ class AppUiAssets {
   static const String errPonctuation = '$_base/err_ponctuation.png';
   static const String writingCelebration = '$_base/writing_celebration.png';
 
+  // Brand logo
+  static const String appLogo = '$_base/app_logo.png';
+  static const String appLogoMark = '$_base/app_logo_mark.png';
+
+  // Extended UI illustrations & icons
+  static const String badgeSuccess = '$_base/badge_success.png';
+  static const String bookWelcome = '$_base/book_welcome.png';
+  static const String brainMind = '$_base/brain_mind.png';
+  static const String clipboardQuiz = '$_base/clipboard_quiz.png';
+  static const String heartSupport = '$_base/heart_support.png';
+  static const String quizAudioHeadset = '$_base/quiz_audio_headset.png';
+  static const String rocketFast = '$_base/rocket_fast.png';
+  static const String scannerCamera = '$_base/scanner_camera.png';
+  static const String sproutDiscovery = '$_base/sprout_discovery.png';
+  static const String trophyAchievement = '$_base/trophy_achievement.png';
+
   static String cycleForLevel(LearnerLevel level) {
     switch (level) {
       case LearnerLevel.primaire:

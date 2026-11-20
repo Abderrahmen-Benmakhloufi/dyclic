@@ -9,7 +9,7 @@ class AppLocalizationsFr extends AppLocalizations {
   AppLocalizationsFr([String locale = 'fr']) : super(locale);
 
   @override
-  String get appTitle => 'Aide à la Lecture et à l\'Écriture';
+  String get appTitle => 'AideLecture';
 
   @override
   String get appTagline =>
@@ -33,31 +33,32 @@ class AppLocalizationsFr extends AppLocalizations {
   String get levelPrimaireTitle => 'Primaire';
 
   @override
-  String get levelPrimaireSubtitle => '5e Année Primaire (5e AP)';
+  String get levelPrimaireSubtitle => 'École primaire (Consolidation)';
 
   @override
   String get levelPrimaireDesc =>
-      'Phrases très courtes, repères visuels clairs et vocabulaire guidé.';
+      'Phrases courtes, repères visuels clairs et vocabulaire guidé.';
 
   @override
-  String get levelMoyenTitle => 'Moyen (Collège)';
+  String get levelMoyenTitle => 'Moyen';
 
   @override
-  String get levelMoyenSubtitle => '1e à 4e Année Moyenne (1e-4e AM)';
+  String get levelMoyenSubtitle =>
+      'Collège / Enseignement moyen (BEM / Brevet)';
 
   @override
   String get levelMoyenDesc =>
-      'Situations d\'intégration, explications pas à pas et enrichissement du vocabulaire.';
+      'Situations complexes, explications pas à pas et préparation au Brevet.';
 
   @override
-  String get levelSecondaireTitle => 'Secondaire (Lycée)';
+  String get levelSecondaireTitle => 'Lycée';
 
   @override
-  String get levelSecondaireSubtitle => '1e à 3e Année Secondaire (1e-3e AS)';
+  String get levelSecondaireSubtitle => '2nde – 1ère – Terminale (Bac)';
 
   @override
   String get levelSecondaireDesc =>
-      'Textes plus denses, démarche argumentative et réflexion méthodique.';
+      'Textes denses et argumentatifs, démarche réflexive et préparation au Bac.';
 
   @override
   String currentLevelBadge(String level) {

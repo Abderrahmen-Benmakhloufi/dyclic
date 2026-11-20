@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/reading_palette.dart';
 import '../../core/tts/tts_service.dart';
 import '../../core/widgets/app_asset_icon.dart';
+import '../../core/services/supabase_service.dart';
 import '../decoding/decoding_screen.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import 'models/writing_feedback_model.dart';
@@ -47,6 +48,17 @@ class _WritingFeedbackScreenState extends ConsumerState<WritingFeedbackScreen> {
     final cacheService = WritingCacheService(prefs);
     _isFavorite =
         cacheService.isFavorite(widget.result.id, widget.result.originalText);
+
+    // Enregistrement des erreurs dans Supabase pour l'analyse des difficultés
+    for (final err in widget.result.errors) {
+      SupabaseService.recordMistake(
+        category: 'writing_${err.category.name}',
+        mistakeType: err.category.labelFr,
+        contextText: err.sentenceContext,
+        userInput: err.wrongText,
+        expectedInput: err.correctedText,
+      );
+    }
   }
 
   void _onTtsStateChanged() {
@@ -67,6 +79,7 @@ class _WritingFeedbackScreenState extends ConsumerState<WritingFeedbackScreen> {
   }
 
   Future<void> _speakText(String text) async {
+    // If this exact text is already playing → stop it (toggle off)
     if (_isPlaying && _currentlySpeakingText == text) {
       await _ttsService.stop();
       if (mounted) {
@@ -76,6 +89,11 @@ class _WritingFeedbackScreenState extends ConsumerState<WritingFeedbackScreen> {
         });
       }
       return;
+    }
+
+    // If another text is playing → stop it first before starting the new one
+    if (_isPlaying) {
+      await _ttsService.stop();
     }
 
     if (mounted) {
@@ -156,16 +174,42 @@ class _WritingFeedbackScreenState extends ConsumerState<WritingFeedbackScreen> {
           tooltip: 'Retour',
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
-          'Mon bilan d\'écriture',
-          style: TextStyle(
-            color: palette.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            fontFamily: fontFamily,
-          ),
+        title: Row(
+          children: [
+            AppAssetIcon(
+              assetPath: AppUiAssets.writingCelebration,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Mon bilan d\'écriture',
+                style: TextStyle(
+                  color: palette.textPrimary,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: fontFamily,
+                ),
+              ),
+            ),
+          ],
         ),
         actions: [
+          if (_isPlaying)
+            IconButton(
+              icon: const Icon(Icons.stop_circle_rounded,
+                  color: AppColors.errorRed, size: 26),
+              tooltip: 'Arrêter la lecture vocale',
+              onPressed: () async {
+                await _ttsService.stop();
+                if (mounted) {
+                  setState(() {
+                    _isPlaying = false;
+                    _currentlySpeakingText = null;
+                  });
+                }
+              },
+            ),
           IconButton(
             icon: Icon(
               _isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
@@ -298,7 +342,12 @@ class _WritingFeedbackScreenState extends ConsumerState<WritingFeedbackScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          // Header row: label pill + audio button (wraps on narrow screens)
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 6,
             children: [
               Container(
                 padding:
@@ -317,7 +366,6 @@ class _WritingFeedbackScreenState extends ConsumerState<WritingFeedbackScreen> {
                   ),
                 ),
               ),
-              const Spacer(),
               _buildAudioPillButton(
                 text: '${result.encouragementFr}. ${result.strengthsFr}',
                 color: AppColors.primary,
@@ -505,38 +553,43 @@ class _WritingFeedbackScreenState extends ConsumerState<WritingFeedbackScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top row: Category pill + Audio button
+          // Top row: Category pill + Audio button (wraps on narrow screens)
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: error.category.lightColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppAssetIcon(
-                      assetPath: error.category.assetPath,
-                      size: 16,
-                      fallbackEmoji: error.category.emoji,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      error.category.labelFr,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.bold,
-                        color: catColor,
-                        fontFamily: fontFamily,
+              Flexible(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: error.category.lightColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppAssetIcon(
+                        assetPath: error.category.assetPath,
+                        size: 16,
+                        fallbackEmoji: error.category.emoji,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 5),
+                      Flexible(
+                        child: Text(
+                          error.category.labelFr,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.bold,
+                            color: catColor,
+                            fontFamily: fontFamily,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               _buildAudioPillButton(text: spokenSummary, color: catColor),
             ],
           ),
@@ -731,7 +784,11 @@ class _WritingFeedbackScreenState extends ConsumerState<WritingFeedbackScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 4,
+            runSpacing: 6,
             children: [
               const Text(
                 '✅ Version corrigée complète',
@@ -741,26 +798,30 @@ class _WritingFeedbackScreenState extends ConsumerState<WritingFeedbackScreen> {
                   color: Color(0xFF047857),
                 ),
               ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.copy_rounded, size: 18),
-                tooltip: 'Copier le texte',
-                color: palette.textSecondary,
-                onPressed: () {
-                  Clipboard.setData(
-                      ClipboardData(text: result.correctedFullText));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Texte corrigé copié ! 📋'),
-                      duration: Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-              ),
-              _buildAudioPillButton(
-                text: result.correctedFullText,
-                color: const Color(0xFF047857),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.copy_rounded, size: 18),
+                    tooltip: 'Copier le texte',
+                    color: palette.textSecondary,
+                    onPressed: () {
+                      Clipboard.setData(
+                          ClipboardData(text: result.correctedFullText));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Texte corrigé copié ! 📋'),
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                  ),
+                  _buildAudioPillButton(
+                    text: result.correctedFullText,
+                    color: const Color(0xFF047857),
+                  ),
+                ],
               ),
             ],
           ),
@@ -781,35 +842,87 @@ class _WritingFeedbackScreenState extends ConsumerState<WritingFeedbackScreen> {
 
   Widget _buildAudioPillButton({required String text, required Color color}) {
     final isThisSpeaking = _isPlaying && _currentlySpeakingText == text;
-    return Material(
-      color: isThisSpeaking ? color : color.withValues(alpha: 0.12),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: () => _speakText(text),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isThisSpeaking ? Icons.stop_rounded : Icons.volume_up_rounded,
-                size: 16,
-                color: isThisSpeaking ? Colors.white : color,
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Primary Listen / Active Playing Pill
+        Material(
+          color: isThisSpeaking ? color : color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            onTap: () => _speakText(text),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isThisSpeaking
+                        ? Icons.volume_up_rounded
+                        : Icons.volume_up_rounded,
+                    size: 15,
+                    color: isThisSpeaking ? Colors.white : color,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    isThisSpeaking ? 'Lecture…' : 'Écouter',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: isThisSpeaking ? Colors.white : color,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 4),
-              Text(
-                isThisSpeaking ? 'Arrêter' : 'Écouter',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.bold,
-                  color: isThisSpeaking ? Colors.white : color,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
+
+        // Dedicated Stop Button that appears when speaking this specific text
+        if (isThisSpeaking) ...[
+          const SizedBox(width: 5),
+          Material(
+            color: AppColors.errorRed,
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              onTap: () async {
+                await _ttsService.stop();
+                if (mounted) {
+                  setState(() {
+                    _isPlaying = false;
+                    _currentlySpeakingText = null;
+                  });
+                }
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.stop_circle_rounded,
+                      size: 15,
+                      color: Colors.white,
+                    ),
+                    SizedBox(width: 3),
+                    Text(
+                      'Stop',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -60,6 +60,17 @@ class AppTheme {
         onError: Colors.white,
       ),
 
+      // Page transitions: calming, smooth, accessible fade & subtle slide
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: DysPageTransitionsBuilder(),
+          TargetPlatform.iOS: DysPageTransitionsBuilder(),
+          TargetPlatform.windows: DysPageTransitionsBuilder(),
+          TargetPlatform.macOS: DysPageTransitionsBuilder(),
+          TargetPlatform.linux: DysPageTransitionsBuilder(),
+        },
+      ),
+
       // Card styling: 18px rounded corners, 1px subtle border, no heavy drop shadows
       cardTheme: CardThemeData(
         color: colors.surface,
@@ -191,4 +202,46 @@ class _PresetColors {
     required this.textSecondary,
     required this.isDark,
   });
+}
+
+/// A smooth, calm, accessible page transition builder designed for dyslexia-friendly UX.
+/// It uses a gentle ease-out cubic curve with a subtle vertical/horizontal drift
+/// and fade, avoiding abrupt flashes or disorienting high-speed motion.
+class DysPageTransitionsBuilder extends PageTransitionsBuilder {
+  const DysPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curvedAnimation = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+
+    final secondaryCurved = CurvedAnimation(
+      parent: secondaryAnimation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+
+    return FadeTransition(
+      opacity: curvedAnimation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.04, 0.0),
+          end: Offset.zero,
+        ).animate(curvedAnimation),
+        child: FadeTransition(
+          opacity: Tween<double>(begin: 1.0, end: 0.92).animate(secondaryCurved),
+          child: child,
+        ),
+      ),
+    );
+  }
 }

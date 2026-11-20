@@ -6,6 +6,9 @@
 class FrenchSilentLetterService {
   FrenchSilentLetterService._();
 
+  static final Map<String, Set<int>> _cache = {};
+  static const int _maxCacheSize = 2000;
+
   /// Mots où la consonne finale est prononcée (exceptions aux consonnes muettes)
   static const Set<String> _pronouncedFinalExceptions = {
     // Terminaison en -t prononcée
@@ -109,6 +112,9 @@ class FrenchSilentLetterService {
   static Set<int> getSilentIndices(String word) {
     if (word.isEmpty) return const {};
 
+    final cached = _cache[word];
+    if (cached != null) return cached;
+
     final lower = word.toLowerCase();
     final silent = <int>{};
 
@@ -157,6 +163,10 @@ class FrenchSilentLetterService {
       }
     }
 
+    if (_cache.length >= _maxCacheSize) {
+      _cache.clear();
+    }
+    _cache[word] = silent;
     return silent;
   }
 }

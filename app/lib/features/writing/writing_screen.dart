@@ -5,9 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/learner_profile/learner_profile_notifier.dart';
 import '../../core/reading_settings/reading_settings_model.dart';
 import '../../core/reading_settings/reading_settings_notifier.dart';
+import '../../core/services/cloud_sync_service.dart';
 import '../../core/services/ocr_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/ai_exit_confirm_dialog.dart';
+import '../../core/widgets/ai_waiting_card.dart';
 import '../../core/widgets/app_asset_icon.dart';
+import '../instructions/instruction_ai_screen.dart';
 import '../instructions/services/gemini_service.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import 'models/writing_feedback_model.dart';
@@ -15,9 +19,9 @@ import 'services/writing_cache_service.dart';
 import 'services/writing_gemini_service.dart';
 import 'writing_feedback_screen.dart';
 
-/// Quick sample student essays containing typical DYS mistakes (10 per cycle: Primaire, Collège, Lycée).
+/// Quick sample student essays containing typical DYS mistakes (10 per cycle: Primaire, Moyen, Lycée).
 const List<Map<String, String>> _kSampleTexts = [
-  // ── PRIMAIRE (10 exemples) ──────────────────────────────────────────────
+  // ── PRIMAIRE (10 exemples) ────────────────────────────────────
   {
     'cycle': 'primaire',
     'label': 'Visite à la ferme',
@@ -79,7 +83,7 @@ const List<Map<String, String>> _kSampleTexts = [
     'label': 'Mon plat préféré',
     'subject': 'Décris ton plat préféré.',
     'text':
-        'J aime beaucoup le couscous que prépare ma grand-mère. Il y a des légumes tendre, des pois chiches et une bonne sause chaude.',
+        'J aime beaucoup la tarte aux pommes que prépare ma grand-mère. Il y a des morceaux de pomme tendre, un peu de cannelle et une bonne patte croustillante.',
   },
   {
     'cycle': 'primaire',
@@ -89,7 +93,7 @@ const List<Map<String, String>> _kSampleTexts = [
         'Un matin, un petit oiso tombé de son nid pleurait sous l arbre. Lina l a pris doucement dans ses mains et l a déposé près de sa maman.',
   },
 
-  // ── COLLÈGE (10 exemples) ───────────────────────────────────────────────
+  // ── MOYEN (10 exemples) ─────────────────────────────────────────
   {
     'cycle': 'college',
     'label': 'Sortie en forêt',
@@ -151,7 +155,7 @@ const List<Map<String, String>> _kSampleTexts = [
     'label': 'Voyage en train',
     'subject': 'Raconte un voyage en train avec ta famille.',
     'text':
-        'Pendant les vacance, nous avons pris le train pour aller à Constantine. Par la fenêtre, je regardais défiler les montagnes et les champs vert. Le trajet a passé vite.',
+        'Pendant les vacance, nous avons pris le TGV pour aller en Bretagne. Par la fenêtre, je regardais défiler les collines et les champs vert. Le trajet a passé vite.',
   },
   {
     'cycle': 'college',
@@ -213,10 +217,10 @@ const List<Map<String, String>> _kSampleTexts = [
   },
   {
     'cycle': 'lycee',
-    'label': 'L’exode rural',
-    'subject': 'Expose les causes du départ des jeunes vers les grandes villes.',
+    'label': 'Littérature engagée',
+    'subject': 'L’écrivain doit-il dénoncer les injustices de son époque ?',
     'text':
-        'Beaucoup de jeunes quittent les régions rurales à la recherche d emploi et d universités. Ce phénomène vide progressivement les villages et crée une surcharge démographique dans les métropole.',
+        'Depuis le siècle des Lumière, de nombreux auteurs ont mis leur plume au service de la liberté. Voltaire et Victor Hugo ont dénoncer la cruauté et l injustice pour éveillé les consciences des citoyen.',
   },
   {
     'cycle': 'lycee',
@@ -258,6 +262,7 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
   bool _isLoading = false;
   bool _hasError = false;
   String _errorMessage = '';
+  bool _isCancelled = false;
 
   @override
   void initState() {
@@ -296,7 +301,7 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
       case LearnerLevel.secondaire:
         return 'Lycée';
       case LearnerLevel.moyen:
-        return 'Collège';
+        return 'Moyen';
     }
   }
 
@@ -318,6 +323,31 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
   Future<void> _submit() async {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
+
+    // ── Validation: minimum 10 words ─────────────────────────────────────
+    final wordCount = text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    if (wordCount < 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Ton texte est trop court ($wordCount mot${wordCount > 1 ? 's' : ''}). Écris au moins 10 mots pour une analyse utile.',
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange.shade700,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
 
     final subject = _subjectController.text.trim();
     final settings = ref.read(readingSettingsProvider);
@@ -367,18 +397,23 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
       _isLoading = true;
       _hasError = false;
       _errorMessage = '';
+      _isCancelled = false;
     });
 
     try {
       final service = WritingGeminiService();
       final errorProfile = _cacheService?.getErrorProfile();
+      final cloudMistakes = ref.read(cachedLearnerMistakesSummaryProvider);
       final result = await service.analyzeWriting(
         studentText: text,
         subjectPrompt: subject,
         learnerLevelCode: learnerCode,
         profile: profile,
         errorProfile: errorProfile,
+        cloudMistakesSummary: cloudMistakes,
       );
+
+      if (_isCancelled || !mounted) return;
 
       if (_cacheService != null) {
         await _cacheService!.saveResult(result);
@@ -395,21 +430,21 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
 
       await _openFeedback(result);
     } on GeminiOfflineException catch (e) {
-      if (!mounted) return;
+      if (_isCancelled || !mounted) return;
       setState(() {
         _isLoading = false;
         _hasError = true;
         _errorMessage = e.message;
       });
     } on GeminiParseException catch (e) {
-      if (!mounted) return;
+      if (_isCancelled || !mounted) return;
       setState(() {
         _isLoading = false;
         _hasError = true;
         _errorMessage = e.message;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (_isCancelled || !mounted) return;
       setState(() {
         _isLoading = false;
         _hasError = true;
@@ -475,22 +510,61 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(readingSettingsProvider);
-    final hasText = _textController.text.trim().isNotEmpty;
+    final rawText = _textController.text.trim();
+    final wordCount = rawText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    final hasText = wordCount >= 10;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
+    return PopScope(
+      canPop: !_isLoading,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final shouldExit = await AiExitConfirmDialog.show(context);
+        if (shouldExit && context.mounted) {
+          _isCancelled = true;
+          setState(() => _isLoading = false);
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
         backgroundColor: AppColors.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-          tooltip: 'Retour',
-        ),
-        title: const Text(
-          'M\'aider à écrire ✍️',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          centerTitle: false,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () async {
+              if (_isLoading) {
+                final shouldExit = await AiExitConfirmDialog.show(context);
+                if (shouldExit && context.mounted) {
+                  _isCancelled = true;
+                  setState(() => _isLoading = false);
+                  Navigator.of(context).pop();
+                }
+              } else {
+                Navigator.of(context).pop();
+              }
+            },
+            tooltip: 'Retour',
+          ),
+        title: const Row(
+          children: [
+            Hero(
+              tag: 'hero_${AppUiAssets.featWriting}',
+              child: AppAssetIcon(
+                assetPath: AppUiAssets.featWriting,
+                size: 26,
+              ),
+            ),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'M\'aider à écrire',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -511,7 +585,7 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
               // ── 1. Pedagogical Header & Level Chip ──────────────────────
               Row(
                 children: [
-                  Text(
+                  const Text(
                     'Niveau détecté :',
                     style: TextStyle(
                       fontSize: 13,
@@ -520,42 +594,46 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => ReadingSettingsSheet.show(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AppAssetIcon(
-                            assetPath:
-                                AppUiAssets.cycleForLevel(settings.learnerLevel),
-                            size: 18,
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => ReadingSettingsSheet.show(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.3),
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _cycleLabel(settings),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AppAssetIcon(
+                              assetPath: AppUiAssets.cycleForLevel(
+                                  settings.learnerLevel),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                _cycleLabel(settings),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.edit_rounded,
+                              size: 12,
                               color: AppColors.primary,
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.edit_rounded,
-                            size: 12,
-                            color: AppColors.primary,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -569,7 +647,28 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
 
               // ── 3. Main Student Writing Input Box ───────────────────────
               _buildMainInputSection(settings, hasText),
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
+
+              // ── 3b. Word counter ─────────────────────────────────────────
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Text(
+                    wordCount < 10
+                        ? '$wordCount / 10 mots minimum'
+                        : '$wordCount mots',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: wordCount < 10
+                          ? Colors.orange.shade700
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
 
               // ── 4. Quick Test Examples ──────────────────────────────────
               _buildSamplesRow(settings),
@@ -627,108 +726,247 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
                         ),
                 ),
               ),
+              if (_isLoading) ...[
+                const SizedBox(height: 14),
+                const AiWaitingCard(
+                  title: 'Analyse bienveillante en cours… ⏳',
+                  message:
+                      'L\'IA examine ton texte pour valoriser tes idées et t\'aider à progresser sans aucun jugement.',
+                  tip:
+                      '💡 Astuce : Respire bien, nous préparons des conseils clairs rien que pour toi !',
+                ),
+              ],
 
               // ── 7. Recent History & Favorites Tabs ──────────────────────
               if (_history.isNotEmpty || _favorites.isNotEmpty) ...[
-                const SizedBox(height: 28),
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 1.5,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.cardBorder.withValues(alpha: 0.1),
+                              AppColors.cardBorder,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceCard,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                              color: AppColors.cardBorder, width: 1),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.folder_open_rounded,
+                                size: 14, color: AppColors.textSecondary),
+                            SizedBox(width: 6),
+                            Text(
+                              'MES ARCHIVES & FAVORIS',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.8,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 1.5,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.cardBorder,
+                              AppColors.cardBorder.withValues(alpha: 0.1),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
                 _buildHistoryAndFavoritesSection(),
               ],
             ],
           ),
         ),
       ),
+    ),
     );
   }
 
   Widget _buildOptionalSubjectSection(ReadingSettings settings) {
-    if (!_showSubjectField) {
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: TextButton.icon(
-          onPressed: () => setState(() => _showSubjectField = true),
-          icon: const Icon(Icons.add_circle_outline_rounded, size: 17),
-          label: const Text('Ajouter le sujet du professeur (optionnel)'),
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF0284C7),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            backgroundColor: const Color(0xFF0284C7).withValues(alpha: 0.08),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-      );
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Text(
-              'Sujet demandé (optionnel)',
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+            if (!_showSubjectField)
+              Expanded(
+                child: TextButton.icon(
+                  onPressed: () => setState(() => _showSubjectField = true),
+                  icon: const Icon(Icons.add_circle_outline_rounded, size: 17),
+                  label: const Text(
+                    'Ajouter le sujet du professeur (optionnel)',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF0284C7),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    backgroundColor:
+                        const Color(0xFF0284C7).withValues(alpha: 0.08),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
               ),
-            ),
-            const Spacer(),
-            GestureDetector(
-              onTap: () {
-                _subjectController.clear();
-                setState(() => _showSubjectField = false);
-              },
-              child: const Text(
-                'Masquer',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
+            if (!_showSubjectField) const SizedBox(width: 8),
+            Expanded(
+              child: TextButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const InstructionAiScreen()),
+                ),
+                icon: const Icon(Icons.lightbulb_outline_rounded, size: 17),
+                label: const Text(
+                  'Comprendre la consigne',
+                  overflow: TextOverflow.ellipsis,
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF00897B),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  backgroundColor:
+                      const Color(0xFF00897B).withValues(alpha: 0.08),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _subjectController,
-          maxLines: 2,
-          minLines: 1,
-          style: TextStyle(
-            fontFamily: settings.fontFamily,
-            fontSize: 14,
-            color: AppColors.textPrimary,
+        if (_showSubjectField) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Text(
+                'Sujet demandé (optionnel)',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () {
+                  _subjectController.clear();
+                  setState(() => _showSubjectField = false);
+                },
+                child: const Text(
+                  'Masquer',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
           ),
-          decoration: InputDecoration(
-            hintText: 'Ex : Décris ton animal préféré en 5 lignes...',
-            hintStyle: TextStyle(
-              fontSize: 13.5,
-              color: AppColors.textSecondary.withValues(alpha: 0.55),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _subjectController,
+            maxLines: 2,
+            minLines: 1,
+            style: TextStyle(
+              fontFamily: settings.fontFamily,
+              fontSize: 14,
+              color: AppColors.textPrimary,
             ),
-            filled: true,
-            fillColor: AppColors.surfaceCard,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.cardBorder,
-                width: 1.2,
+            decoration: InputDecoration(
+              hintText: 'Ex : Décris ton animal préféré en 5 lignes...',
+              hintStyle: TextStyle(
+                fontSize: 13.5,
+                color: AppColors.textSecondary.withValues(alpha: 0.55),
+              ),
+              filled: true,
+              fillColor: AppColors.surfaceCard,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(
+                  color: AppColors.cardBorder,
+                  width: 1.2,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 1.5,
+                ),
               ),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 1.5,
-              ),
-            ),
           ),
-        ),
+        ],
       ],
+    );
+  }
+
+  Widget _buildActionChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -736,7 +974,11 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 6,
           children: [
             const Text(
               'Mon texte',
@@ -746,97 +988,31 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
                 color: AppColors.textPrimary,
               ),
             ),
-            const Spacer(),
-            // OCR Scanner Button
-            GestureDetector(
-              onTap: _scanText,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.25),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                _buildActionChip(
+                  icon: Icons.camera_alt_rounded,
+                  label: 'Scanner',
+                  color: AppColors.primary,
+                  onTap: _scanText,
+                ),
+                _buildActionChip(
+                  icon: Icons.content_paste_rounded,
+                  label: 'Coller',
+                  color: AppColors.textSecondary,
+                  onTap: _pasteText,
+                ),
+                if (hasText)
+                  _buildActionChip(
+                    icon: Icons.close_rounded,
+                    label: 'Effacer',
+                    color: Colors.red,
+                    onTap: _clearInput,
                   ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.camera_alt_rounded,
-                        size: 13, color: AppColors.primary),
-                    SizedBox(width: 4),
-                    Text(
-                      'Scanner',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ),
-            const SizedBox(width: 6),
-            // Paste Button
-            GestureDetector(
-              onTap: _pasteText,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceCard,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.content_paste_rounded,
-                        size: 13, color: AppColors.textSecondary),
-                    SizedBox(width: 4),
-                    Text(
-                      'Coller',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (hasText) ...[
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: _clearInput,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.close_rounded, size: 13, color: Colors.red),
-                      SizedBox(width: 3),
-                      Text(
-                        'Effacer',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.red,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
         const SizedBox(height: 8),
@@ -993,227 +1169,310 @@ class _WritingScreenState extends ConsumerState<WritingScreen> {
   Widget _buildHistoryAndFavoritesSection() {
     final activeList = _showFavoritesTab ? _favorites : _history;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            // Recents tab
-            GestureDetector(
-              onTap: () => setState(() => _showFavoritesTab = false),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: !_showFavoritesTab
-                      ? AppColors.primary
-                      : AppColors.surfaceCard,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: !_showFavoritesTab
-                        ? AppColors.primary
-                        : AppColors.cardBorder,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.history_rounded,
-                      size: 15,
-                      color: !_showFavoritesTab
-                          ? Colors.white
-                          : AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Récents (${_history.length})',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: !_showFavoritesTab
-                            ? Colors.white
-                            : AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Favorites tab
-            GestureDetector(
-              onTap: () => setState(() => _showFavoritesTab = true),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: _showFavoritesTab
-                      ? Colors.amber.shade700
-                      : AppColors.surfaceCard,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: _showFavoritesTab
-                        ? Colors.amber.shade700
-                        : AppColors.cardBorder,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.star_rounded,
-                      size: 15,
-                      color: _showFavoritesTab
-                          ? Colors.white
-                          : Colors.amber.shade700,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Favoris (${_favorites.length})',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: _showFavoritesTab
-                            ? Colors.white
-                            : AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const Spacer(),
-            if (!_showFavoritesTab && _history.isNotEmpty)
-              TextButton(
-                onPressed: () async {
-                  if (_cacheService != null) {
-                    await _cacheService!.clearHistory();
-                  }
-                  setState(() => _history = []);
-                },
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                ),
-                child: const Text(
-                  'Effacer',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                ),
-              ),
-          ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.cardBorder,
+          width: 1.2,
         ),
-        const SizedBox(height: 12),
-        if (activeList.isEmpty)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceCard,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.cardBorder, width: 1.0),
-            ),
-            child: Center(
-              child: Text(
-                _showFavoritesTab
-                    ? 'Aucun bilan en favoris.\nTouche l\'étoile ⭐ sur un bilan pour le garder ici !'
-                    : 'Aucun texte analysé récemment.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: AppColors.textSecondary.withValues(alpha: 0.8),
-                  height: 1.4,
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              // Segmented selector container
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Recents tab
+                    GestureDetector(
+                      onTap: () => setState(() => _showFavoritesTab = false),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: !_showFavoritesTab
+                              ? AppColors.primary
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.history_rounded,
+                              size: 14,
+                              color: !_showFavoritesTab
+                                  ? Colors.white
+                                  : AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Récents (${_history.length})',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: !_showFavoritesTab
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    // Favorites tab
+                    GestureDetector(
+                      onTap: () => setState(() => _showFavoritesTab = true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: _showFavoritesTab
+                              ? Colors.amber.shade700
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.star_rounded,
+                              size: 14,
+                              color: _showFavoritesTab
+                                  ? Colors.white
+                                  : Colors.amber.shade700,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Favoris (${_favorites.length})',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: _showFavoritesTab
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          )
-        else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: activeList.length > 5 ? 5 : activeList.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final item = activeList[index];
-              final errCount = item.errors.length;
-              return Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _openFeedback(item),
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceCard,
-                      borderRadius: BorderRadius.circular(14),
-                      border:
-                          Border.all(color: AppColors.cardBorder, width: 1.0),
-                    ),
+              if (!_showFavoritesTab && _history.isNotEmpty)
+                InkWell(
+                  onTap: () async {
+                    if (_cacheService != null) {
+                      await _cacheService!.clearHistory();
+                    }
+                    setState(() => _history = []);
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                     child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: errCount == 0
-                                ? const Color(0xFF10B981).withValues(alpha: 0.12)
-                                : AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: AppAssetIcon(
-                            assetPath: errCount == 0
-                                ? AppUiAssets.writingCelebration
-                                : AppUiAssets.featWriting,
-                            size: 20,
-                            fallbackEmoji: errCount == 0 ? '🎉' : '✍️',
-                          ),
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.delete_outline_rounded,
+                            size: 14, color: AppColors.textSecondary),
+                        SizedBox(width: 2),
+                        Text(
+                          'Effacer',
+                          style: TextStyle(
+                              fontSize: 12, color: AppColors.textSecondary),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.subjectPrompt.isNotEmpty
-                                    ? item.subjectPrompt
-                                    : item.originalText,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                errCount == 0
-                                    ? 'Aucune erreur détectée'
-                                    : '$errCount erreur(s) analysée(s)',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  color: AppColors.textSecondary
-                                      .withValues(alpha: 0.8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (_showFavoritesTab)
-                          const Icon(Icons.star_rounded,
-                              size: 18, color: Colors.amber)
-                        else
-                          const Icon(Icons.arrow_forward_ios_rounded,
-                              size: 13, color: AppColors.textSecondary),
                       ],
                     ),
                   ),
                 ),
-              );
-            },
+            ],
           ),
-      ],
+          const SizedBox(height: 14),
+          if (activeList.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.cardBorder, width: 1.0),
+              ),
+              child: Center(
+                child: Text(
+                  _showFavoritesTab
+                      ? 'Aucun bilan en favoris.\nTouche l\'étoile ⭐ sur un bilan pour le garder ici !'
+                      : 'Aucun texte analysé récemment.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.textSecondary.withValues(alpha: 0.8),
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: activeList.length > 5 ? 5 : activeList.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final item = activeList[index];
+                final errCount = item.errors.length;
+                final tileContent = Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _openFeedback(item),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(14),
+                        border:
+                            Border.all(color: AppColors.cardBorder, width: 1.0),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: errCount == 0
+                                  ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                  : AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: AppAssetIcon(
+                              assetPath: errCount == 0
+                                  ? AppUiAssets.writingCelebration
+                                  : AppUiAssets.featWriting,
+                              size: 20,
+                              fallbackEmoji: errCount == 0 ? '🎉' : '✍️',
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.subjectPrompt.isNotEmpty
+                                      ? item.subjectPrompt
+                                      : item.originalText,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  errCount == 0
+                                      ? 'Aucune erreur détectée'
+                                      : '$errCount erreur(s) analysée(s)',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: AppColors.textSecondary
+                                        .withValues(alpha: 0.8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (_showFavoritesTab)
+                            const Icon(Icons.star_rounded,
+                                size: 18, color: Colors.amber)
+                          else
+                            const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 13, color: AppColors.textSecondary),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+
+                if (_showFavoritesTab) {
+                  return tileContent;
+                }
+
+                return Dismissible(
+                  key: Key('writing_history_${item.id}'),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 18),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorRed.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Supprimer',
+                          style: TextStyle(
+                            color: AppColors.errorRed,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Icon(Icons.delete_outline_rounded,
+                            color: AppColors.errorRed, size: 20),
+                      ],
+                    ),
+                  ),
+                  onDismissed: (_) async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    if (_cacheService != null) {
+                      await _cacheService!.deleteHistoryItem(item.id);
+                    }
+                    if (mounted) {
+                      setState(() {
+                        _history.removeWhere((h) => h.id == item.id);
+                      });
+                    }
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Bilan supprimé de l\'historique'),
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  child: tileContent,
+                );
+              },
+            ),
+        ],
+      ),
     );
   }
 }

@@ -1,12 +1,14 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/reading_settings/reading_settings_notifier.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/tts/tts_service.dart';
+import '../../core/widgets/app_asset_icon.dart';
 import '../reading_settings/reading_settings_sheet.dart';
 import 'data/decoding_rules_data.dart';
+import 'decoding_quiz_screen.dart';
 import 'models/decoding_rule_model.dart';
 
 class DecodingScreen extends ConsumerStatefulWidget {
@@ -20,18 +22,27 @@ class _DecodingScreenState extends ConsumerState<DecodingScreen> {
   String? _selectedFilterId;
   String? _currentlySpeakingWord;
   Timer? _speakingTimer;
+  late final TtsService _ttsService;
+
+  @override
+  void initState() {
+    super.initState();
+    _ttsService = ref.read(ttsServiceProvider);
+  }
 
   @override
   void dispose() {
     _speakingTimer?.cancel();
+    _ttsService.stop();
     super.dispose();
   }
 
   Future<void> _playWordAudio(String word) async {
     _speakingTimer?.cancel();
+    await _ttsService.stop();
+    if (!mounted) return;
     setState(() => _currentlySpeakingWord = word);
-    final tts = ref.read(ttsServiceProvider);
-    await tts.speakWord(word);
+    await _ttsService.speakWord(word);
     if (mounted) {
       _speakingTimer = Timer(const Duration(milliseconds: 1400), () {
         if (mounted && _currentlySpeakingWord == word) {
@@ -53,7 +64,25 @@ class _DecodingScreenState extends ConsumerState<DecodingScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Aide au décodage'),
+        centerTitle: false,
+        title: const Row(
+          children: [
+            Hero(
+              tag: 'hero_${AppUiAssets.featDecoding}',
+              child: AppAssetIcon(
+                assetPath: AppUiAssets.featDecoding,
+                size: 26,
+              ),
+            ),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Aide au décodage',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.tune_rounded),
@@ -66,6 +95,119 @@ class _DecodingScreenState extends ConsumerState<DecodingScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // Quiz Banner / Card prominent
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF8E24AA), Color(0xFFAB47BC)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF8E24AA).withAlpha(45),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            DecodingQuizScreen(ruleId: _selectedFilterId),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(50),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.quiz_rounded,
+                              color: Colors.white,
+                              size: 26,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Quiz d\'écoute et décodage',
+                                  style: TextStyle(
+                                    fontFamily: settings.fontFamily,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Entraîne-toi à reconnaître les sons et les lettres',
+                                  style: TextStyle(
+                                    fontFamily: settings.fontFamily,
+                                    fontSize: 12.5,
+                                    color: Colors.white.withAlpha(230),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Jouer',
+                                  style: TextStyle(
+                                    color: Color(0xFF8E24AA),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                SizedBox(width: 4),
+                                Icon(
+                                  Icons.play_arrow_rounded,
+                                  size: 16,
+                                  color: Color(0xFF8E24AA),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
             // Filter Selector Chips
             Container(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -319,6 +461,7 @@ class _DecodingScreenState extends ConsumerState<DecodingScreen> {
     String fontFamily,
   ) {
     final isSpeaking = _currentlySpeakingWord == example.word;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return InkWell(
       key: ValueKey('word_${example.word}'),
@@ -327,6 +470,9 @@ class _DecodingScreenState extends ConsumerState<DecodingScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        constraints: BoxConstraints(
+          maxWidth: screenWidth > 80 ? screenWidth - 72 : 260,
+        ),
         decoration: BoxDecoration(
           color: isSpeaking
               ? AppColors.primary.withValues(alpha: 0.18)
@@ -361,6 +507,7 @@ class _DecodingScreenState extends ConsumerState<DecodingScreen> {
               const SizedBox(height: 3),
               Text(
                 example.note!,
+                softWrap: true,
                 style: const TextStyle(
                   fontSize: 11,
                   color: Color(0xFF64748B),

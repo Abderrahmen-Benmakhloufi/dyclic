@@ -3,7 +3,7 @@
     "id": "PRI-01",
     "title": "Repérer une information explicite dans le texte",
     "cycle": "primaire",
-    "level": "Primaire (5e AP / CM2)",
+    "level": "Cycle 3 (CM1 - 6e)",
     "domain": "Compréhension de l'écrit",
     "questionType": "comprehension",
     "originalFr": "Relève dans le premier paragraphe la phrase qui montre que le personnage principal est fatigué.",
@@ -26,7 +26,7 @@
     "id": "PRI-02",
     "title": "Vrai ou Faux avec justification textuelle",
     "cycle": "primaire",
-    "level": "Primaire (4e-5e AP / CM1-CM2)",
+    "level": "Cycle 3 (CM1 - CM2)",
     "domain": "Compréhension de l'écrit",
     "questionType": "comprehension",
     "originalFr": "Réponds par \"Vrai\" ou \"Faux\" aux affirmations suivantes, puis justifie ta réponse en relevant une phrase du texte.",
@@ -49,7 +49,7 @@
     "id": "PRI-03",
     "title": "Changement d'indicateur temporel et conjugaison au futur simple",
     "cycle": "primaire",
-    "level": "Primaire",
+    "level": "Cycle 3 (CM2 - 6e)",
     "domain": "Langue / Grammaire-Conjugaison",
     "questionType": "langue",
     "originalFr": "Réécris la phrase suivante en remplaçant \"Aujourd'hui\" par \"Demain\" et fais les transformations nécessaires.",
@@ -72,8 +72,8 @@
     "id": "PRI-04",
     "title": "Production écrite : raconter un événement vécu",
     "cycle": "primaire",
-    "level": "Primaire",
-    "domain": "Production écrite / Situation d'intégration",
+    "level": "Cycle 3 (CM1 - 6e)",
+    "domain": "Production écrite",
     "questionType": "production",
     "originalFr": "Raconte en 4 à 5 lignes un voyage que tu as fait. Utilise le passé composé et des connecteurs chronologiques (d'abord, ensuite, enfin).",
     "steps": [
@@ -95,7 +95,7 @@
     "id": "PRI-05",
     "title": "Identifier la nature et la fonction d'un mot",
     "cycle": "primaire",
-    "level": "Primaire",
+    "level": "Cycle 3 (CM2 - 6e)",
     "domain": "Langue / Grammaire",
     "questionType": "langue",
     "originalFr": "Dans la phrase suivante, souligne le sujet, encadre le verbe et donne l'infinitif de ce verbe.",
@@ -118,7 +118,7 @@
     "id": "MOY-01",
     "title": "Identifier les composantes d'un récit",
     "cycle": "college",
-    "level": "Moyen / Collège",
+    "level": "Cycle 4 (5e - 4e)",
     "domain": "Compréhension de l'écrit",
     "questionType": "comprehension",
     "originalFr": "Dégage les éléments de la situation initiale : qui est le narrateur, qui sont les personnages, quel est le cadre spatio-temporel et quel est l'élément perturbateur ?",
@@ -141,7 +141,7 @@
     "id": "MOY-02",
     "title": "Vrai / Faux justifié par une citation textuelle",
     "cycle": "college",
-    "level": "Moyen / Collège",
+    "level": "Cycle 4 (Collège / Brevet)",
     "domain": "Compréhension de l'écrit",
     "questionType": "comprehension",
     "originalFr": "Dis si l'affirmation est vraie ou fausse et justifie ta réponse par une citation précise tirée du texte.",
@@ -164,7 +164,7 @@
     "id": "MOY-03",
     "title": "Relever un champ lexical et interpréter son effet",
     "cycle": "college",
-    "level": "Moyen / Collège",
+    "level": "Cycle 4 (4e - 3e)",
     "domain": "Compréhension de l'écrit",
     "questionType": "comprehension",
     "originalFr": "Relève quatre mots appartenant au champ lexical de la \"guerre\" et interprète l'effet produit sur le lecteur.",
@@ -181,32 +181,32 @@
   },
   {
     "id": "MOY-04",
-    "title": "Production argumentative (Type BEM)",
+    "title": "Production argumentative (Brevet - DNB)",
     "cycle": "college",
-    "level": "Moyen / Collège (4e AM / 3ème)",
+    "level": "Cycle 4 (3e / Brevet DNB)",
     "domain": "Production écrite",
     "questionType": "production",
-    "originalFr": "Rédige un texte argumentatif pour défendre ta thèse. Tu dois proposer trois arguments introduits par des connecteurs logiques, une reformulation, un exemple concret et n'oublie pas le titre.",
+    "originalFr": "Dans le cadre d'un sujet de réflexion au Brevet, rédigez un développement argumenté pour défendre votre point de vue. Proposez deux ou trois arguments étayés par des exemples concrets et des connecteurs logiques.",
     "steps": [
       {
         "stepNumber": 1,
-        "textFr": "Écris un titre et présente ta thèse. La \"thèse\" est ton opinion, l'idée principale que tu vas défendre dans ton texte."
+        "textFr": "Formule clairement ta thèse dès l'introduction. La \"thèse\" est ton opinion personnelle ou la position que tu choisis de défendre."
       },
       {
         "stepNumber": 2,
-        "textFr": "Trouve trois arguments. Un \"argument\" est une raison forte ou une preuve qui explique pourquoi tu as raison."
+        "textFr": "Développe deux ou trois arguments distincts. Un \"argument\" est une raison valable ou une explication logique qui justifie ta position."
       },
       {
         "stepNumber": 3,
-        "textFr": "Utilise des connecteurs logiques devant chaque argument. Les \"connecteurs logiques\" sont des mots de liaison (comme *premièrement, d'une part, en outre, par conséquent*) qui ordonnent tes idées."
+        "textFr": "Relie tes paragraphes par des connecteurs logiques (d'une part, de plus, en outre, enfin) pour organiser ta pensée."
       },
       {
         "stepNumber": 4,
-        "textFr": "Insère un exemple concret (un fait réel, une histoire, un chiffre) pour illustrer un de tes arguments."
+        "textFr": "Associe à chaque argument un exemple concret issu de tes lectures, de l'actualité ou d'une œuvre étudiée en classe."
       },
       {
         "stepNumber": 5,
-        "textFr": "Fais une reformulation. \"Reformuler\", c'est redire une idée difficile ou importante avec d'autres mots plus simples pour être sûr qu'on te comprenne (en utilisant : *c'est-à-dire, autrement dit*)."
+        "textFr": "Rédige une courte conclusion qui résume ton propos et apporte une réponse d'ensemble à la question posée."
       }
     ]
   },
@@ -214,7 +214,7 @@
     "id": "MOY-05",
     "title": "Transformer un rapport logique de cause / conséquence",
     "cycle": "college",
-    "level": "Moyen / Collège",
+    "level": "Cycle 4 (4e - 3e)",
     "domain": "Langue / Grammaire",
     "questionType": "langue",
     "originalFr": "Identifie le rapport logique exprimé dans la phrase, puis réécris-la en remplaçant l'articulateur par un autre équivalent.",
@@ -237,7 +237,7 @@
     "id": "MOY-06",
     "title": "Transformation du discours direct au discours indirect",
     "cycle": "college",
-    "level": "Moyen / Collège",
+    "level": "Cycle 4 (5e - 3e)",
     "domain": "Langue / Grammaire",
     "questionType": "langue",
     "originalFr": "Transpose la phrase suivante au discours indirect en faisant attention à la concordance des temps et aux pronoms.",
@@ -258,128 +258,132 @@
   },
   {
     "id": "MOY-07",
-    "title": "Dégager la visée communicative de l'auteur",
+    "title": "Dégager la visée et l'effet produit dans un texte (Brevet)",
     "cycle": "college",
-    "level": "Moyen / Collège",
+    "level": "Cycle 4 (3e / Brevet)",
     "domain": "Compréhension de l'écrit",
     "questionType": "comprehension",
-    "originalFr": "Dégage la visée communicative de l'auteur dans ce texte.",
+    "originalFr": "Quelle est la visée de l'auteur dans ce texte et quel effet cherche-t-il à produire sur le lecteur ?",
     "steps": [
       {
         "stepNumber": 1,
-        "textFr": "Analyse le texte pour trouver la visée communicative. La \"visée communicative\" est le but caché de l'auteur, ce qu'il cherche à faire dans la tête du lecteur en écrivant ce texte."
+        "textFr": "Analyse l'intention de l'auteur. La \"visée\", c'est l'objectif poursuivi : cherche-t-il à informer, émouvoir, dénoncer, faire rire ou faire réfléchir le lecteur ?"
       },
       {
         "stepNumber": 2,
-        "textFr": "Choisis le bon verbe d'action pour ta réponse. Est-ce que l'auteur veut *informer*, *convaincre* (donner des arguments), *sensibiliser* (toucher le cœur pour faire prendre conscience), *démontrer* ou *inciter* à agir ?"
+        "textFr": "Repère les indices du texte qui appuient cette visée : le choix des adjectifs, les images, le ton utilisé ou les répétitions."
       },
       {
         "stepNumber": 3,
-        "textFr": "Formule une phrase complète pour répondre (exemple : *La visée communicative de l'auteur est de sensibiliser les lecteurs à...*)."
+        "textFr": "Formule une réponse complète en citant entre guillemets (« ... ») le mot ou la phrase qui prouve ton analyse."
       }
     ]
   },
   {
     "id": "SEC-01",
-    "title": "Rédiger le compte-rendu objectif d'un texte d'histoire",
+    "title": "Commentaire composé : rédiger une étude littéraire (Bac - EAF)",
     "cycle": "lycee",
-    "level": "Secondaire / Lycée",
+    "level": "Lycée (Première / Bac EAF)",
     "domain": "Production écrite",
     "questionType": "production",
-    "originalFr": "Rédigez le compte-rendu objectif de ce document d'histoire. Analysez la situation d'énonciation, sélectionnez les faits clés et faites une synthèse neutre.",
+    "originalFr": "Dans le cadre du commentaire composé au Baccalauréat, rédigez une étude ordonnée en formulant deux axes de lecture appuyés sur une problématique littéraire.",
     "steps": [
       {
         "stepNumber": 1,
-        "textFr": "Prépare un compte-rendu objectif. Le \"compte-rendu objectif\" est un résumé très structuré où tu présentes le texte puis tu résumes ses idées de manière totalement neutre (sans utiliser \"je\" et sans jamais donner ton avis)."
+        "textFr": "Comprendre le commentaire composé. Cet exercice consiste à expliquer le sens profond d'un texte littéraire en montrant comment la manière d'écrire (la forme) sert le message de l'auteur (le fond)."
       },
       {
         "stepNumber": 2,
-        "textFr": "Analyse la situation d'énonciation (dans ton premier paragraphe). C'est la présentation du texte : tu dois dire qui parle (auteur), à qui (destinataire), de quoi (thème), où, quand et dans quel but."
+        "textFr": "Formule une problématique. C'est la grande question centrale qui guide ton devoir (exemple : *Comment le poète exprime-t-il l'angoisse du temps qui passe ?*)."
       },
       {
         "stepNumber": 3,
-        "textFr": "Sélectionne les faits clés (dans ton deuxième paragraphe). Retiens seulement les événements historiques majeurs du texte et les grandes dates, en laissant de côté les petits détails."
+        "textFr": "Construis deux axes de lecture. Un \"axe de lecture\" est une grande partie thématique qui répond à la problématique."
       },
       {
         "stepNumber": 4,
-        "textFr": "Fais une synthèse neutre en reliant ces faits avec tes propres mots, en restant toujours fidèle à l'idée du texte historique."
+        "textFr": "Structure chaque sous-partie avec la méthode CLE : Citer le texte entre guillemets, identifier le procédé Littéraire ou stylistique, et expliquer l'Effet ou le sens."
       }
     ]
   },
   {
     "id": "SEC-02",
-    "title": "Visée communicative, implicite et ironie",
+    "title": "Analyser l'implicite, l'ironie et le registre littéraire (Bac)",
     "cycle": "lycee",
-    "level": "Secondaire / Lycée",
+    "level": "Lycée (2nde - 1ère)",
     "domain": "Compréhension de l'écrit",
     "questionType": "comprehension",
     "originalFr": "Quelle est la visée communicative du texte ? Repérez un passage implicite ou ironique qui justifie votre analyse.",
     "steps": [
       {
         "stepNumber": 1,
-        "textFr": "Détermine la visée communicative (le but final de l'auteur : ex. critiquer, dénoncer, se moquer)."
+        "textFr": "Détermine le registre littéraire (tonalité dominante : satirique, tragique, polémique, lyrique) et le but de l'auteur."
       },
       {
         "stepNumber": 2,
-        "textFr": "Cherche un passage implicite. L'\"implicite\" est un message caché ; c'est ce qui n'est pas écrit clairement avec des mots, mais que le lecteur intelligent doit deviner en lisant entre les lignes."
+        "textFr": "Cherche un passage implicite. L'\"implicite\" est un message sous-entendu ; ce n'est pas dit directement mais le lecteur le déduit en lisant entre les lignes."
       },
       {
         "stepNumber": 3,
-        "textFr": "Ou bien, cherche un passage ironique. L'\"ironie\", c'est dire exactement le contraire de ce qu'on pense vraiment, souvent pour se moquer de quelque chose ou de quelqu'un."
+        "textFr": "Cherche un passage ironique. L'\"ironie\" consiste à faire entendre le contraire de ce que l'on dit, souvent pour ridiculiser ou dénoncer."
       },
       {
         "stepNumber": 4,
-        "textFr": "Recopie cette phrase du texte pour prouver ton analyse du but de l'auteur."
+        "textFr": "Recopie cette phrase précise entre guillemets pour prouver ton analyse."
       }
     ]
   },
   {
     "id": "SEC-03",
-    "title": "Étude du texte exhortatif / Appel",
+    "title": "Analyser les procédés stylistiques et figures de style (Bac - EAF)",
     "cycle": "lycee",
-    "level": "Secondaire / Lycée",
+    "level": "Lycée (2nde - Première)",
     "domain": "Compréhension de l'écrit",
     "questionType": "comprehension",
-    "originalFr": "Démontrez que ce texte est un appel en relevant le constat négatif de départ, la nécessité de changement, et l'interpellation des destinataires.",
+    "originalFr": "Démontrez la portée expressive du texte en relevant deux figures de style (métaphore, anaphore, antithèse) et analysez leur effet symbolique.",
     "steps": [
       {
         "stepNumber": 1,
-        "textFr": "Relève le constat négatif. Le \"constat négatif\", c'est la partie au début du texte où l'auteur expose une situation grave, intolérable ou un problème actuel (la misère, la pollution, la guerre)."
+        "textFr": "Repère deux figures de style. Une \"figure de style\" est un effet d'écriture qui donne de la force ou de la beauté à une idée."
       },
       {
         "stepNumber": 2,
-        "textFr": "Trouve la nécessité de changement. C'est le moment où l'auteur explique qu'il est obligatoire d'agir pour résoudre ce problème (souvent avec *il faut que, nous devons*)."
+        "textFr": "Nomme avec précision chaque figure (ex: une métaphore pour une comparaison sans mot de liaison, une antithèse pour une opposition de sens)."
       },
       {
         "stepNumber": 3,
-        "textFr": "Repère l'interpellation. L'\"interpellation\", c'est l'appel direct (le texte exhortatif). L'auteur s'adresse directement au public pour le pousser à l'action, en utilisant des verbes à l'impératif (ex: *Agissez !*) ou au subjonctif."
+        "textFr": "Cite le texte exactement entre guillemets (« ... »)."
+      },
+      {
+        "stepNumber": 4,
+        "textFr": "Analyse l'effet produit : explique ce que cette figure apporte au sens du poème ou du texte et à l'émotion du lecteur."
       }
     ]
   },
   {
     "id": "SEC-04",
-    "title": "Rédiger un plaidoyer ou un réquisitoire",
+    "title": "Dissertation littéraire : construire une argumentation (Bac - EAF)",
     "cycle": "lycee",
-    "level": "Secondaire / Lycée",
+    "level": "Lycée (Première / Bac EAF)",
     "domain": "Production écrite",
     "questionType": "production",
-    "originalFr": "Rédigez un plaidoyer ou un réquisitoire dans le cadre du débat d'idées soulevé par le texte.",
+    "originalFr": "Pour répondre à un sujet de dissertation littéraire, rédigez une argumentation ordonnée appuyée sur votre connaissance de l'œuvre intégrale au programme.",
     "steps": [
       {
         "stepNumber": 1,
-        "textFr": "Choisis ton camp dans le débat d'idées. Es-tu \"pour\" ou \"contre\" le thème abordé ?"
+        "textFr": "Analyse les mots-clés du sujet de dissertation pour dégager la question centrale à laquelle ton devoir va répondre."
       },
       {
         "stepNumber": 2,
-        "textFr": "Si tu es \"pour\", rédige un plaidoyer. Un \"plaidoyer\", c'est un discours enthousiaste où tu défends une idée, une personne ou une cause avec des arguments très positifs pour convaincre."
+        "textFr": "Construis un plan structuré en 2 ou 3 grandes parties (plan dialectique avec thèse et antithèse, ou plan thématique)."
       },
       {
         "stepNumber": 3,
-        "textFr": "Si tu es \"contre\", rédige un réquisitoire. Un \"réquisitoire\", c'est un discours sévère où tu attaques et tu accuses une idée ou une situation avec des arguments négatifs pour montrer que c'est mal ou dangereux."
+        "textFr": "Formule des arguments clairs dans chaque partie et relie-les par des connecteurs logiques."
       },
       {
         "stepNumber": 4,
-        "textFr": "Rédige ton texte avec conviction, en utilisant des connecteurs logiques et un vocabulaire fort."
+        "textFr": "Illustre chaque argument par des exemples précis tirés de l'œuvre intégrale au programme (épisodes, personnages, citations)."
       }
     ]
   },
@@ -387,7 +391,7 @@
     "id": "SEC-05",
     "title": "Identifier et analyser les marques de modalisation",
     "cycle": "lycee",
-    "level": "Secondaire / Lycée",
+    "level": "Lycée (2nde - 1ère)",
     "domain": "Compréhension de l'écrit / Langue",
     "questionType": "langue",
     "originalFr": "Identifiez deux marques de modalisation (lexique mélioratif ou péjoratif, degré de certitude) et justifiez la présence subjective de l'auteur.",
